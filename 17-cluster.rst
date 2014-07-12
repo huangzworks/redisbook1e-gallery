@@ -662,7 +662,7 @@
 
         rankdir = LR;
 
-        splines = ortho;
+        splines = polyline;
 
         //
 
@@ -853,7 +853,7 @@ ASK 错误
 
         rankdir = LR;
 
-        splines = ortho;
+        splines = polyline;
 
         //
 
@@ -879,7 +879,7 @@ ASK 错误
 
         rankdir = LR;
 
-        splines = ortho;
+        splines = polyline
 
         //
 
@@ -893,9 +893,9 @@ ASK 错误
 
         client -> node7003 [label = "转向"];
 
-        client -> node7003 [label = "\nASKING"];
+        client -> node7003 [label = "ASKING"];
 
-        client -> node7003 [label = "\nGET \"love\""];
+        client -> node7003 [label = "\n GET \"love\""];
 
         client -> node7003 [dir = back, label = "\n\"you get the key 'love'\""];
 

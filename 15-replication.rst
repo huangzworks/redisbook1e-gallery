@@ -12,7 +12,7 @@
 
         rankdir = LR
 
-        splines = ortho
+        splines = polyline
 
         node [shape = box, height = 2]
 
@@ -155,7 +155,7 @@ Redis 的命令传播过程示例。
 
         node [shape = record, height = 2];
 
-        splines = ortho;
+        splines = polyline;
 
         master [label = "主\n服\n务\n器"];
 
@@ -452,7 +452,7 @@ Redis 服务器监测命令缺失，并补发缺失命令的过程。
 
         rankdir = LR
 
-        splines = ortho
+        splines = polyline
 
         node [shape = box, height = 2]
 

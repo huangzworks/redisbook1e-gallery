@@ -296,6 +296,7 @@ BY 选项的实现
 -------------------
 
 服务器在执行 ``SORT fruits BY *-price`` 时创建的数据结构。
+
 .. graphviz::
 
     digraph {
