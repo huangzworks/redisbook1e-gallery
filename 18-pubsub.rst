@@ -277,6 +277,3 @@
 
         all_book -> all_news;
     }
-
-----
-
