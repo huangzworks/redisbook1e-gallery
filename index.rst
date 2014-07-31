@@ -20,6 +20,9 @@
 你只要说明这些材料来源于《Redis 设计与实现》（或者添加一个指向 `RedisBook.com <http://redisbook.com/>`_ 的链接），
 就可以以非商业的目的随意地使用这些材料。
 
+如果有任何疑问，
+请通过 `huangz.me <http://huangz.me>`_ 上面列出的联系方式来联系我。
+
 | 黄健宏（huangz）
 | 2014.7.31
 
