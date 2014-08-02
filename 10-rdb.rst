@@ -121,7 +121,7 @@ RDB 文件的创建与载入
 
         rankdir = LR;
 
-        splines = ortho
+        splines = polyline
 
         //
 

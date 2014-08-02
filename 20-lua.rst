@@ -40,7 +40,7 @@ Lua 脚本执行 Redis 命令时的通讯步骤。
 
         node [shape = record, height = 2.0];
 
-        splines = ortho;
+        splines = polyline;
 
         //
 
@@ -74,7 +74,7 @@ Lua 环境、伪客户端、命令执行器三者之间的通讯过程。
 
         node [shape = record, height = 2.0];
 
-        splines = ortho;
+        splines = polyline;
 
         //
 

@@ -250,7 +250,7 @@
 
         rankdir = LR;
 
-        splines = ortho;
+        splines = polyline;
 
         //
 
@@ -504,7 +504,7 @@
 
         rankdir = LR;
 
-        splines = ortho;
+        splines = polyline;
 
         node [shape = box];
 
@@ -528,7 +528,7 @@
 
         rankdir = LR;
 
-        splines = ortho;
+        splines = polyline;
 
         node [shape = box];
 

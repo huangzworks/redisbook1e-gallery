@@ -140,7 +140,7 @@ Redis 的 I/O 多路复用程序有多个 I/O 多路复用库可选。
 
         label = "\n图 12-7    客户端和服务器的通讯过程";
 
-        splines = ortho;
+        splines = polyline;
 
         rankdir = LR;
 

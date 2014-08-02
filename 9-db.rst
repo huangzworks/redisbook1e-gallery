@@ -260,7 +260,7 @@
         client [label = "客户端", shape = circle];
 
         //
-        splines = ortho;
+        splines = polyline;
 
         master_db -> slave_db [style = invis, minlen = 2];
 
@@ -302,7 +302,7 @@
 
         //
 
-        splines = ortho;
+        splines = polyline;
 
         master_db -> slave_db [label = "DEL message"];
 
