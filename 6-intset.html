@@ -1,0 +1,234 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>第 6 章：整数集合 &mdash; 《Redis 设计与实现》图片集</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="《Redis 设计与实现》图片集" href="index.html" />
+    <link rel="next" title="第 7 章：压缩列表" href="7-ziplist.html" />
+    <link rel="prev" title="第 5 章：跳跃表" href="5-skiplist.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="7-ziplist.html" title="第 7 章：压缩列表"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="5-skiplist.html" title="第 5 章：跳跃表"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="id1">
+<h1>第 6 章：整数集合<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p>一个整数集合示例，包含五个 <code class="docutils literal"><span class="pre">int16_t</span></code> 类型的整数值。</p>
+<p class="graphviz">
+<img src="_images/graphviz-acf7fe010d7b09c5d2500c72eb555863e67ad74f.png" alt="digraph {
+
+    label = &quot;\n 图 6-1    一个包含五个 int16_t 类型整数值的整数集合&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    intset [label = &quot; intset | encoding \n INTSET_ENC_INT16 | length \n 5 | &lt;contents&gt; contents &quot;];
+
+    //contents [label = &quot; { { 0 位至 15 位 | &lt;arrow&gt; -6370 } | { 16 位至 31 位 | -5 } | { 32 位至 47 位 | 18 } | { 48 至 63 位 | 233 } | { 64 位至 79 位 | 14632 } } &quot;];
+
+    //intset:contents -&gt; contents:arrow;
+
+    contents [label = &quot; { -6370 | -5 | 18 | 233 | 14632 } &quot;];
+    intset:contents -&gt; contents;
+}" />
+</p>
+<hr class="docutils" />
+<p>另一个整数集合示例，包含四个 <code class="docutils literal"><span class="pre">int64_t</span></code> 类型的整数值。</p>
+<p class="graphviz">
+<img src="_images/graphviz-878c08b90e7bbd02863d3e5cad116b36785ea30e.png" alt="digraph {
+
+    label = &quot;\n 图 6-2    一个包含四个 int64_t 类型整数值的整数集合&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    intset [label = &quot; intset | encoding \n INTSET_ENC_INT64 | length \n 4 | &lt;contents&gt; contents &quot;];
+
+    contents [label = &quot; { -2675256175807981027 | 1 | 3 | 5 } &quot;];
+
+    intset:contents -&gt; contents:arrow;
+
+}" />
+</p>
+<hr class="docutils" />
+<p>当向一个包含三个 <code class="docutils literal"><span class="pre">int16_t</span></code> 类型的值的整数集合添加一个 <code class="docutils literal"><span class="pre">int32_t</span></code> 类型的值时，
+整数集合的扩展和转换过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-eac3e19de3f8dd9c40f2302c7b2d10e73983cd5c.png" alt="digraph {
+
+    label = &quot;\n 图 6-4    contents 数组的各个元素，以及它们所在的位&quot;;
+
+    node [shape = record];
+
+    contents [label = &quot; { 位 | 元素 } | { 0 至 15 位 | 1 } | { 16 至 31 位 | 2 } | { 32 至 47 位 | 3 } &quot;];
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-63f486a40c957eb449a5836555915601a1be61d6.png" alt="digraph {
+
+    label = &quot;\n 图 6-5    进行空间重分配之后的数组&quot;;
+
+    node [shape = record];
+
+    contents [label = &quot; { 位 | 元素 } | { 0 至 15 位 | 1 } | { 16 至 31 位 | 2 } | { 32 至 47 位 | 3 } | { 48 至 127 位 | （新分配空间）} &quot;];
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-b8d54b0b6f077fd7a618a9fc198350cb3301fe8a.png" alt="digraph {
+
+    label = &quot;\n 图 6-6    对元素 3 进行类型转换，并保存在适当的位上&quot;;
+
+    node [shape = record];
+
+    contents [label = &quot; { 位 | 元素 } | { 0 至 15 位 | 1 } | { 16 至 31 位 | 2 } | { 32 至 47 位 | &lt;old&gt; 3 } | { 48 至 63 位 | （新分配空间） } | { 64 位至 95 位 | &lt;new&gt; 3 } | { 96 位至 127 位 | （新分配空间）} &quot;];
+
+    contents:old -&gt; contents:new [label = &quot;从 int16_t 类型转换为 int32_t 类型&quot;];
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-851e799be7671b59d22c1360c757f70871b1460a.png" alt="digraph {
+
+    label = &quot;\n 图 6-7    对元素 2 进行类型转换，并保存在适当的位上&quot;;
+
+    node [shape = record];
+
+    contents [label = &quot; { 位 | 元素 } | { 0 至 15 位 | 1 } | { 16 至 31 位 | &lt;old&gt; 2 } | { 32 至 63 位 | &lt;new&gt; 2 } | { 64 位至 95 位 | 3 } | { 96 位至 127 位 | （新分配空间）} &quot;];
+
+    contents:old -&gt; contents:new [label = &quot;从 int16_t 类型转换为 int32_t 类型&quot;];
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-a6e1fc86a05aa7dab4284dbdb027cedb96a5259a.png" alt="digraph {
+
+    label = &quot;\n 图 6-8    对元素 1 进行类型转换，并保存在适当的位上&quot;;
+
+    node [shape = record];
+
+    contents [label = &quot; { 位 | 元素 } | { 0 至 31 位 | &lt;old&gt; 1 } | { 32 至 63 位 | 2 } | { 64 位至 95 位 | 3 } | { 96 位至 127 位 | （新分配空间）} &quot;];
+
+    //contents:old -&gt; contents:new [label = &quot;从 int16_t 类型转换为 int32_t 类型&quot;];
+    contents:old -&gt; contents:old [label = &quot;从 int16_t 类型转换为 int32_t 类型&quot;];
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-c0a4fd52c53de90a8b70888f89c7b39df564fc6b.png" alt="digraph {
+
+    label = &quot;\n 图 6-9    添加 65535 到数组&quot;;
+
+    rankdir = BT;
+
+    node [shape = record];
+
+    set [label = &quot;添加新元素&quot;, shape = plaintext];
+
+    contents [label = &quot; { 位 | 元素 } | { 0 至 31 位 | 1 } | { 32 至 63 位 | 2 } | { 64 位至 95 位 | 3 } | { 96 位至 127 位 | &lt;new&gt; 65535 } &quot;];
+
+
+    set -&gt; contents:new;
+
+}" />
+</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="5-skiplist.html"
+                        title="previous chapter">第 5 章：跳跃表</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="7-ziplist.html"
+                        title="next chapter">第 7 章：压缩列表</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/6-intset.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="7-ziplist.html" title="第 7 章：压缩列表"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="5-skiplist.html" title="第 5 章：跳跃表"
+             >previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, 黄健宏（huangz）.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

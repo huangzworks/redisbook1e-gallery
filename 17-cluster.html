@@ -1,0 +1,1365 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>第 17 章： 集群 &mdash; 《Redis 设计与实现》图片集</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="《Redis 设计与实现》图片集" href="index.html" />
+    <link rel="next" title="第 18 章： 发布与订阅" href="18-pubsub.html" />
+    <link rel="prev" title="第 16 章： Sentinel" href="16-sentinel.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="18-pubsub.html" title="第 18 章： 发布与订阅"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="16-sentinel.html" title="第 16 章： Sentinel"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="id1">
+<h1>第 17 章： 集群<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id2">
+<h2>节点<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>三个节点的握手过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-48a6e832e37169c30c009a0cb16bd028d3ed804c.png" alt="digraph {
+
+    label = &quot;\n 图 17-1    三个独立的节点&quot;;
+
+    node [shape = circle];
+
+    subgraph cluster_a {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        7000;
+
+    }
+
+    subgraph cluster_b {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        7001;
+
+    }
+
+    subgraph cluster_c {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        7002;
+
+    }
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-c8a86ea8adabce15d5ef2568150a94d7c13d5b77.png" alt="digraph {
+
+    label = &quot;\n 图 17-2    节点 7000 和 7001 进行握手&quot;;
+
+    rankdir = LR;
+
+    node [shape = circle];
+
+    subgraph cluster_a {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        7000;
+
+    }
+
+    subgraph cluster_b {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        7001;
+
+    }
+
+    subgraph cluster_c {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        7002;
+
+    }
+
+    7000 -&gt; 7001 [label = &quot;握手&quot;];
+
+    7000 -&gt; 7001 [dir = back, label = &quot;响应握手&quot;];
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-db7f193bfe0cb77ea8a6776b9d48c8a47c5adf39.png" alt="digraph {
+
+    label = &quot;\n 图 17-3    握手成功的 7000 与 7001 处于同一个集群&quot;;
+
+    rankdir = LR;
+
+    node [shape = circle];
+
+    subgraph cluster_a {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        7000;
+
+        7001;
+
+        7000 -&gt; 7001 [style = invis];
+
+    }
+
+    subgraph cluster_c {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        7002;
+
+    }
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-c2fcdadc8bab38040bc9a258e3db88c6bed5a642.png" alt="digraph {
+
+    label = &quot;\n 图 17-4    节点 7000 与节点 7002 进行握手&quot;;
+
+    rankdir = LR;
+
+    node [shape = circle];
+
+    subgraph cluster_a {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        7000;
+
+        7001;
+
+        7000 -&gt; 7001 [style = invis];
+
+    }
+
+    subgraph cluster_c {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        7002;
+
+    }
+
+    7000 -&gt; 7002 [label = &quot;握手&quot;];
+
+    7000 -&gt; 7002 [dir = back, label = &quot;响应握手&quot;];
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-2203fc9c03899a525ad8f02ea4dd16035dd4b6cc.png" alt="digraph {
+
+    label = &quot;\n 图 17-5    握手成功的三个节点处于同一个集群&quot;;
+
+    rankdir = LR;
+
+    subgraph cluster_a {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        node [shape = circle];
+
+        7000;
+
+        7002;
+
+        7001;
+
+        edge [style = invis];
+
+        7000 -&gt; 7001;
+
+        7000 -&gt; 7002;
+
+    }
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">clusterNode</span></code> 结构的示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-9918e854bcc7de909d8ddac20b76618568e75723.png" alt="digraph {
+
+    label = &quot;\n 图 17-7    节点 7000 创建的 clusterState 结构&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    clusterState [label = &quot; &lt;head&gt; clusterState | &lt;myself&gt; myself | currentEpoch \n 0 | state \n REDIS_CLUSTER_FAIL | size \n 0 | &lt;nodes&gt; nodes | ... &quot;];
+
+    nodes [label = &quot; &lt;head&gt; nodes | &lt;0&gt; \&quot;5154...2939\&quot; | &lt;1&gt; \&quot;68ee...f2ff\&quot; | &lt;2&gt; \&quot;9dfb...5c26\&quot; &quot;];
+
+    node7000 [label = &quot; &lt;head&gt; clusterNode | name \n \&quot;5154...2939\&quot; | flags \n REDIS_NODE_MASTER | configEpoch \n 0 | ip \n \&quot;127.0.0.1\&quot; | port \n 7000 | ... &quot;];
+    node7001 [label = &quot; &lt;head&gt; clusterNode | name \n \&quot;68ee...f2ff\&quot;| flags \n REDIS_NODE_MASTER | configEpoch \n 0 | ip \n \&quot;127.0.0.1\&quot; | port \n 7001 | ... &quot;];
+    node7002 [label = &quot; &lt;head&gt; clusterNode | name \n \&quot;9dfb...5c26\&quot;| flags \n REDIS_NODE_MASTER | configEpoch \n 0 | ip \n \&quot;127.0.0.1\&quot; | port \n 7002 | ... &quot;];
+
+    //link7000 [label = &quot; &lt;head&gt; clusterLink | ctime | fd | sndbuf | rcvbuf &quot;];
+
+    clusterState:myself -&gt;  node7000:head;
+
+    clusterState:nodes -&gt; nodes:head;
+
+    nodes:0 -&gt; node7000:head;
+    nodes:1 -&gt; node7001:head;
+    nodes:2 -&gt; node7002:head;
+
+}" />
+</p>
+<hr class="docutils" />
+<p>节点之间进行握手时的通信过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-c3f19dd40ff14db891e429fb5d9e9a80182aa3ca.png" alt="digraph {
+
+    label = &quot;\n 图 17-8    节点的握手过程&quot;;
+
+    rankdir = LR;
+
+    splines = polyline;
+
+    //
+
+    node [shape = box, height = 2];
+
+    client [label = &quot;客\n户\n端&quot;];
+
+    A [label = &quot;节\n点\nA&quot;];
+
+    B [label = &quot;节\n点\nB&quot;];
+
+    //
+
+    client -&gt; A [label = &quot;发送命令 \n CLUSTER MEET \n &lt;B_ip&gt; &lt;B_port&gt;&quot;];
+
+    A -&gt; B [label = &quot;发送 MEET 消息&quot;];
+
+    A -&gt; B [dir = back, label = &quot;\n返回 PONG 消息&quot;];
+
+    A -&gt; B [label = &quot;\n返回 PING 消息&quot;];
+
+}" />
+</p>
+</div>
+<div class="section" id="id3">
+<h2>槽指派<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>图 17-9 展示了一个 <code class="docutils literal"><span class="pre">slots</span></code> 数组示例：
+这个数组索引 <code class="docutils literal"><span class="pre">0</span></code> 至索引 <code class="docutils literal"><span class="pre">7</span></code> 上的二进制位的值都为 <code class="docutils literal"><span class="pre">1</span></code> ，
+其余所有二进制位的值都为 <code class="docutils literal"><span class="pre">0</span></code> ，
+这表示节点负责处理槽 <code class="docutils literal"><span class="pre">0</span></code> 至槽 <code class="docutils literal"><span class="pre">7</span></code> 。</p>
+<p class="graphviz">
+<img src="_images/graphviz-f4e2ea85d79cfa546d741dfc6eb759c914b8238c.png" alt="digraph {
+
+    label = &quot;\n 图 17-9    一个 slots 数组示例&quot;;
+
+    node [shape = record];
+
+    slots [label = &quot; { 字节 | 索引 | 值 } | { slots[0] | {{ 0 | 1} | { 1 | 1} | { 2 | 1 } | { 3 | 1} | { 4 | 1 } | { 5 | 1 } | { 6 | 1 } | { 7 | 1 } }} | { slots[1] ~ slots[2047] | {{ 8 | 0 } | { 9 | 0 } | { 10 | 0 } | { 11 | 0 } | { 12 | 0 } | { ... | ... } | { 16381 | 0 } | { 16382 | 0 } | { 16383 | 0 } }} &quot;];
+
+}" />
+</p>
+<p>图 17-10 展示了另一个 <code class="docutils literal"><span class="pre">slots</span></code> 数组示例：
+这个数组索引 <code class="docutils literal"><span class="pre">1</span></code> 、 <code class="docutils literal"><span class="pre">3</span></code> 、 <code class="docutils literal"><span class="pre">5</span></code> 、 <code class="docutils literal"><span class="pre">8</span></code> 、 <code class="docutils literal"><span class="pre">9</span></code> 、 <code class="docutils literal"><span class="pre">10</span></code> 上的二进制位的值都为 <code class="docutils literal"><span class="pre">1</span></code> ，
+而其余所有二进制位的值都为 <code class="docutils literal"><span class="pre">0</span></code> ，
+这表示节点负责处理槽 <code class="docutils literal"><span class="pre">1</span></code> 、 <code class="docutils literal"><span class="pre">3</span></code> 、 <code class="docutils literal"><span class="pre">5</span></code> 、 <code class="docutils literal"><span class="pre">8</span></code> 、 <code class="docutils literal"><span class="pre">9</span></code> 、 <code class="docutils literal"><span class="pre">10</span></code> 。</p>
+<p class="graphviz">
+<img src="_images/graphviz-d14f3a0591ae484be99a64ea07ce44137cee95c9.png" alt="digraph {
+
+    label = &quot;\n 图 17-10    另一个 slots 数组示例&quot;;
+
+    node [shape = record];
+
+    slots [label = &quot; { 字节 | 索引 | 值 } | { slots[0] | {{ 0 | 0} | { 1 | 1} | { 2 | 0 } | { 3 | 1} | { 4 | 0 } | { 5 | 1 } | { 6 | 0 } | { 7 | 0 } }} | { slots[1] | {{ 8 | 1} | { 9 | 1 } | { 10 | 1 } | { 11 | 0 } | { 12 | 0 } | { 13 | 0 } | { 14 | 0 } | { 15 | 0 }}} | { ... | ... | ... } | { slots[2047] | { { ... | ... } | { 16382 | 0 } | { 16383 | 0 }} } &quot;];
+
+}" />
+</p>
+<hr class="docutils" />
+<p>节点之间互相传递槽指派信息的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-9d36fbbb3e36a00f4dbf5726d3454b32db9af9be.png" alt="digraph {
+
+    label = &quot;\n 图 17-11    7000 告知 7001 和 7002 自己负责处理的槽&quot;;
+
+    rankdir = LR;
+
+    subgraph cluster_a {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        node [shape = circle];
+
+        7000;
+
+        7002;
+
+        7001;
+
+        edge [style = dashed, label = &quot;\n我负责处理\n槽 0 至槽 5000&quot;];
+
+        7000 -&gt; 7001;
+
+        7000 -&gt; 7002;
+
+    }
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-385e8e971ed3ff3d0de104e8e39953ea32541eb6.png" alt="digraph {
+
+    label = &quot;\n 图 17-12    7001 告知 7000 和 7002 自己负责处理的槽&quot;;
+
+    subgraph cluster_a {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        node [shape = circle];
+
+        7000;
+
+        7002;
+
+        7001;
+
+        edge [style = dashed, label = &quot;我负责处理\n槽 5001 至槽 10000&quot;];
+
+        7001 -&gt; 7000;
+        7001 -&gt; 7002;
+
+    }
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-4982f6dbedb170f9a0aa82d981f3618088a0914b.png" alt="digraph {
+
+    label = &quot;\n 图 17-13    7002 告知 7000 和 7001 自己负责处理的槽&quot;;
+
+    rankdir = BT;
+
+    subgraph cluster_a {
+
+        label = &quot;集群&quot;;
+        labelloc = &quot;b&quot;;
+
+        style = dashed;
+
+        node [shape = circle];
+
+        7000;
+
+        7002;
+
+        7001;
+
+        edge [style = dashed, label = &quot;我负责处理\n槽 10001 至槽 16383&quot;];
+
+        7002 -&gt; 7000;
+        7002 -&gt; 7001;
+
+    }
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">clusterState</span></code> 结构的 <code class="docutils literal"><span class="pre">slots</span></code> 数组示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-dbc5b814af27f83c1ce4731898f00bbbc10ca688.png" alt="digraph {
+
+    label = &quot;\n 图 17-14    clusterState 结构的 slots 数组&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    clusterState [label = &quot; clusterState | ... | &lt;slots&gt; slots | ... &quot;];
+
+    slots [label = &quot; &lt;head&gt; clusterNode*[16384] | &lt;0&gt; 0 | &lt;1&gt; 1 | &lt;2&gt; ... | &lt;5000&gt; 5000 | &lt;5001&gt; 5001 | &lt;5002&gt; 5002 | &lt;5003&gt; ... | &lt;10000&gt; 10000 | &lt;10001&gt; 10001 | &lt;10002&gt; 10002 | &lt;10003&gt; ... | &lt;16383&gt; 16383 &quot;];
+
+    node7000 [label = &quot; &lt;head&gt; clusterNode | ... | ip \n \&quot;127.0.0.1\&quot; | port \n 7000 | ... &quot;];
+    node7001 [label = &quot; &lt;head&gt; clusterNode | ... | ip \n \&quot;127.0.0.1\&quot; | port \n 7001 | ... &quot;];
+    node7002 [label = &quot; &lt;head&gt; clusterNode | ... | ip \n \&quot;127.0.0.1\&quot; | port \n 7002 | ... &quot;];
+
+    slots:0 -&gt; node7000:head;
+    slots:1 -&gt; node7000:head;
+    slots:2 -&gt; node7000:head;
+    slots:5000 -&gt; node7000:head;
+
+    slots:5001 -&gt; node7001:head;
+    slots:5002 -&gt; node7001:head;
+    slots:5003 -&gt; node7001:head;
+    slots:10000 -&gt; node7001:head;
+
+    slots:10001 -&gt; node7002:head;
+    slots:10002 -&gt; node7002:head;
+    slots:10003 -&gt; node7002:head;
+    slots:16383 -&gt; node7002:head;
+
+    clusterState:slots -&gt; slots:head;
+
+}" />
+</p>
+</div>
+<div class="section" id="id4">
+<h2>在集群中执行命令<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<p>在集群中执行命令时的判断过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-6f36d23c96de411c52b064521b087ba8bda9ccd8.png" alt="digraph {
+
+    label = &quot;\n 图 17-18    判断客户端是否需要转向的流程&quot;;
+
+    node [shape = box];
+
+    client_send_command [label = &quot;客户端向节点发送数据库键命令&quot;, width = 7];
+
+    get_slot_number [label = &quot;节点计算键属于哪个槽&quot;];
+
+    node_handle_right_slot_or_not [label = &quot;当前节点就是\n负责处理键所在槽的节点？&quot;, shape = diamond];
+
+    execute_command [label = &quot;节点执行命令&quot;];
+
+    return_moved [label = &quot;节点向客户端返回一个\n MOVED 错误&quot;];
+
+    client_redirect [label = &quot;客户端根据 MOVED 错误提供的信息\n转向至正确的节点&quot;];
+
+    //
+
+    client_send_command -&gt; get_slot_number;
+
+    get_slot_number -&gt; node_handle_right_slot_or_not;
+
+    node_handle_right_slot_or_not -&gt; execute_command [label = &quot;是&quot;];
+
+    node_handle_right_slot_or_not -&gt; return_moved [label = &quot;不是&quot;];
+
+    return_moved -&gt; client_redirect;
+
+    client_redirect -&gt; client_send_command [label = &quot;重试&quot;];
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">MOVED</span></code> 错误引发的转向过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-fd118bc1e5d00ab3f6ed6f1fd15660454180462e.png" alt="digraph {
+
+    label = &quot;\n 图 17-20    节点 7000 向客户端返回 MOVED 错误&quot;;
+
+    rankdir = LR;
+
+    splines = polyline;
+
+    node [shape = box];
+
+    client [label = &quot;客户端&quot;, height = 2.5];
+
+    node7000 [label = &quot;节点 7000&quot;, height = 2.5];
+
+    //
+
+    client -&gt; node7000 [label = &quot;\nSET msg \&quot;happy new year!\&quot;&quot;];
+
+    client -&gt; node7000 [dir = back, label = &quot;\nMOVED 6257 127.0.0.1:7001&quot;];
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-f493afd6f5dd84caa1c8815491878c48fa8797af.png" alt="digraph {
+
+    label = &quot;\n 图 17-21    客户端根据 MOVED 错误的指示转向至节点 7001&quot;;
+
+    rankdir = LR;
+
+    splines = polyline;
+
+    node [shape = box];
+
+    client [label = &quot;客户端&quot;, height = 2.5];
+
+    node7001 [label = &quot;节点 7001&quot;, height = 2.5];
+
+    //
+
+    client -&gt; node7001 [label = &quot;\n转向&quot;];
+
+    client -&gt; node7001 [label = &quot;\nSET msg \&quot;happy new year!\&quot;&quot;];
+
+    client -&gt; node7001 [dir = back, label = &quot;\nOK&quot;];
+
+}" />
+</p>
+<hr class="docutils" />
+<p>集群节点为记录键所在槽而创建的跳跃表。</p>
+<p class="graphviz">
+<img src="_images/graphviz-7d8c052c7993e1861781c7f3191c28d8aca8318b.png" alt="digraph {
+
+    rankdir = LR;
+
+    node [shape = record, width = &quot;0.5&quot;];
+
+    //
+
+    l [label = &quot; &lt;header&gt; header | &lt;tail&gt; tail | level \n 5 | length \n 3 &quot;];
+
+    subgraph cluster_nodes {
+
+        style = invisible;
+
+        header [label = &quot; &lt;l32&gt; L32 | ... | &lt;l5&gt; L5 | &lt;l4&gt; L4 | &lt;l3&gt; L3 | &lt;l2&gt; L2 | &lt;l1&gt; L1 &quot;];
+
+        bw_null [label = &quot;NULL&quot;, shape = plaintext];
+
+        level_null [label = &quot;NULL&quot;, shape = plaintext];
+
+        A [label = &quot; &lt;l4&gt; L4 | &lt;l3&gt; L3 | &lt;l2&gt; L2 | &lt;l1&gt; L1 | &lt;backward&gt; BW | 1337.0 | StringObject \n \&quot;book\&quot; &quot;];
+
+        B [label = &quot; &lt;l2&gt; L2 | &lt;l1&gt; L1 | &lt;backward&gt; BW | 2022.0 | StringObject \n \&quot;date\&quot; &quot;];
+
+        C [label = &quot; &lt;l5&gt; L5 | &lt;l4&gt; L4 | &lt;l3&gt; L3 | &lt;l2&gt; L2 | &lt;l1&gt; L1 | &lt;backward&gt; BW | 3347.0 | StringObject \n \&quot;lst\&quot; &quot;];
+
+    }
+
+    subgraph cluster_nulls {
+
+        style = invisible;
+
+        n1 [label = &quot;NULL&quot;, shape = plaintext];
+        n2 [label = &quot;NULL&quot;, shape = plaintext];
+        n3 [label = &quot;NULL&quot;, shape = plaintext];
+        n4 [label = &quot;NULL&quot;, shape = plaintext];
+        n5 [label = &quot;NULL&quot;, shape = plaintext];
+
+    }
+
+    //
+
+    l:header -&gt; header;
+    l:tail -&gt; C;
+
+    /*
+    // 移除连接线的 span 分值
+    header:l32 -&gt; level_null [label = &quot;0&quot;];
+    header:l5 -&gt; C:l5 [label = &quot;3&quot;];
+    header:l4 -&gt; A:l4 [label = &quot;1&quot;];
+    header:l3 -&gt; A:l3 [label = &quot;1&quot;];
+    header:l2 -&gt; A:l2 [label = &quot;1&quot;];
+    header:l1 -&gt; A:l1 [label = &quot;1&quot;];
+
+    A:l4 -&gt; C:l4 [label = &quot;2&quot;];
+    A:l3 -&gt; C:l3 [label = &quot;2&quot;];
+    A:l2 -&gt; B:l2 [label = &quot;1&quot;];
+    A:l1 -&gt; B:l1 [label = &quot;1&quot;];
+
+    B:l2 -&gt; C:l2 [label = &quot;1&quot;];
+    B:l1 -&gt; C:l1 [label = &quot;1&quot;];
+
+    C:l5 -&gt; n5 [label = &quot;0&quot;];
+    C:l4 -&gt; n4 [label = &quot;0&quot;];
+    C:l3 -&gt; n3 [label = &quot;0&quot;];
+    C:l2 -&gt; n2 [label = &quot;0&quot;];
+    C:l1 -&gt; n1 [label = &quot;0&quot;];
+    */
+
+    header:l32 -&gt; level_null;
+    header:l5 -&gt; C:l5;
+    header:l4 -&gt; A:l4;
+    header:l3 -&gt; A:l3;
+    header:l2 -&gt; A:l2;
+    header:l1 -&gt; A:l1;
+
+    A:l4 -&gt; C:l4;
+    A:l3 -&gt; C:l3;
+    A:l2 -&gt; B:l2;
+    A:l1 -&gt; B:l1;
+
+    B:l2 -&gt; C:l2;
+    B:l1 -&gt; C:l1;
+
+    C:l5 -&gt; n5;
+    C:l4 -&gt; n4;
+    C:l3 -&gt; n3;
+    C:l2 -&gt; n2;
+    C:l1 -&gt; n1;
+    bw_null -&gt; A:backward -&gt; B:backward -&gt; C:backward [dir = back];
+
+    label = &quot;\n 图 17-23    节点 7000 的 slots_to_keys 跳跃表&quot;;
+}" />
+</p>
+</div>
+<div class="section" id="id5">
+<h2>重新分片<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<p>将一个键从一个节点迁移到另一个节点的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-fba74127c3849e540cea49200ee809b01f8c8a27.png" alt="digraph {
+
+    label = &quot;\n 图 17-24    迁移键的过程&quot;;
+
+    rankdir = LR;
+
+    splines = polyline;
+
+    //
+
+    node [shape = box, height = 3];
+
+    client [label = &quot;redis-trib&quot;];
+
+    source [label = &quot;源\n节\n点&quot;];
+
+    target [label = &quot;目\n标\n节\n点&quot;];
+
+    //
+
+    client -&gt; source [label = &quot;1) 发送命令 \n CLUSTER GETKEYSINSLOT &lt;slot&gt; &lt;count&gt;&quot;];
+
+    client -&gt; source [dir = back, label = &quot;\n 2) 返回最多 count 个属于槽 slot 的键&quot;];
+
+    client -&gt; source [label = &quot;\n 3) 对于每个返回键\n向源节点发送一个 MIGRATE 命令&quot;];
+
+    source -&gt; target [label = &quot;\n 4) 根据 MIGRATE 命令的指示 \n 将键迁移至目标节点&quot;];
+
+}" />
+</p>
+<hr class="docutils" />
+<p>重新分片的整个过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-fe3255f5de0cbab6f74ac113827dcf4f34ea65fe.png" alt="digraph {
+
+    label = &quot;\n 图 17-25    对槽 slot 进行重新分片的过程&quot;
+
+    node [shape = box]
+
+    start [label = &quot;开始对槽 slot 进行重新分片&quot;]
+
+    send_importing_to_target [label = &quot;目标节点准备导入槽 slot 的键值对&quot;];
+
+    send_migrating_to_source [label = &quot;源节点准备迁移槽 slot 的键值对&quot;];
+
+    start -&gt; send_importing_to_target -&gt; send_migrating_to_source;
+
+    contain_slot_key_or_not [shape = diamond, label = &quot;源节点是否保存了\n属于槽 slot 的键？&quot;]
+
+    migrate [label = &quot;将这些键\n全部迁移至目标节点&quot;]
+
+    assign [label = &quot;将槽 slot 指派给目标节点&quot;]
+
+    done [label = &quot;完成对槽 slot 的重新分片&quot;]
+
+
+    send_migrating_to_source -&gt; contain_slot_key_or_not
+
+    contain_slot_key_or_not -&gt; migrate [label = &quot;是&quot;]
+
+    migrate -&gt; assign
+
+    contain_slot_key_or_not -&gt; assign [label = &quot;否&quot;]
+
+    assign -&gt; done
+
+
+
+}" />
+</p>
+</div>
+<div class="section" id="ask">
+<h2>ASK 错误<a class="headerlink" href="#ask" title="Permalink to this headline">¶</a></h2>
+<p>源节点判断是否需要向客户端发送 <code class="docutils literal"><span class="pre">ASK</span></code> 错误的整个过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-e2c71f49318a6636a74534d4517ffa173c27dae0.png" alt="digraph {
+
+    label = &quot;\n 图 17-26    判断是否发送 ASK 错误的过程&quot;;
+
+    //
+
+    node [shape = box];
+
+    send_command [label = &quot;客户端向源节点发送关于键 key 的命令&quot;];
+
+    key_in_or_not [label = &quot;键 key 是否存在于\n源节点的数据库？&quot;, shape = diamond];
+
+    execute_command [label = &quot;节点执行客户端发送的命令&quot;];
+
+    reshaing_or_not [label = &quot;节点正在迁移槽 i ？&quot;, shape = diamond];
+
+    ask_redirect [label = &quot;向客户端返回 ASK 错误&quot;];
+
+    //
+
+    send_command -&gt; key_in_or_not;
+
+    key_in_or_not -&gt; execute_command [label = &quot;是&quot;];
+
+    key_in_or_not -&gt; reshaing_or_not [label = &quot;否&quot;];
+
+    reshaing_or_not -&gt; ask_redirect [label = &quot;是\n键 key 有可能在目标节点&quot;];
+
+    reshaing_or_not -&gt; execute_command [label = &quot;否\n键 key 不存在&quot;];
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">importing_slots_from</span></code> 结构以及 <code class="docutils literal"><span class="pre">migrating_slots_to</span></code> 结构的示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-3065976827e7ea7bacc5b89104167644953d14cb.png" alt="digraph {
+
+    label = &quot;\n 图 17-27    节点 7003 的 importing_slots_from 数组&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    clusterState [label = &quot; clusterState | ... | &lt;slots&gt; importing_slots_from | ... &quot;];
+
+    slots [label = &quot; &lt;head&gt; clusterNode*[16384] | &lt;0&gt; 0 | &lt;1&gt; 1 | &lt;2&gt; 2 | &lt;3&gt; ... | &lt;16198&gt; 16198 | &lt;15002&gt; ... | &lt;16381&gt; 16381 | &lt;16382&gt; 16382 | &lt;16383&gt; 16383 &quot;];
+
+    node7002 [label = &quot; &lt;head&gt; clusterNode | ... | ip \n \&quot;127.0.0.1\&quot; | port \n 7002 | ... &quot;];
+
+    node [shape = plaintext, label = &quot;NULL&quot;];
+
+    //
+
+    slots:0 -&gt; null0;
+    slots:1 -&gt; null1;
+    slots:2 -&gt; null2;
+    slots:16198 -&gt; node7002:head [minlen = 2];
+    slots:16381 -&gt; null16381;
+    slots:16382 -&gt; null16382;
+    slots:16383 -&gt; null16383;
+
+    clusterState:slots -&gt; slots:head;
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-ed29e688b1313357de5bffdce9f6e021cd3c7f7e.png" alt="digraph {
+
+    label = &quot;\n 图 17-28    节点 7002 的 migrating_slots_to 数组&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    clusterState [label = &quot; clusterState | ... | &lt;slots&gt; migrating_slots_to | ... &quot;];
+
+    slots [label = &quot; &lt;head&gt; clusterNode*[16384] | &lt;0&gt; 0 | &lt;1&gt; 1 | &lt;2&gt; 2 | &lt;3&gt; ... | &lt;16198&gt; 16198 | &lt;15002&gt; ... | &lt;16381&gt; 16381 | &lt;16382&gt; 16382 | &lt;16383&gt; 16383 &quot;];
+
+    node7003 [label = &quot; &lt;head&gt; clusterNode | ... | ip \n \&quot;127.0.0.1\&quot; | port \n 7003 | ... &quot;];
+
+    node [shape = plaintext, label = &quot;NULL&quot;];
+
+    //
+
+    slots:0 -&gt; null0;
+    slots:1 -&gt; null1;
+    slots:2 -&gt; null2;
+    slots:16198 -&gt; node7003:head [minlen = 2];
+    slots:16381 -&gt; null16381;
+    slots:16382 -&gt; null16382;
+    slots:16383 -&gt; null16383;
+
+    clusterState:slots -&gt; slots:head;
+
+}" />
+</p>
+<hr class="docutils" />
+<p>客户端根据 <code class="docutils literal"><span class="pre">ASK</span></code> 错误进行转向的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-33ecbe4574e08d8373be9d7d84f21a3d0ec950bb.png" alt="digraph {
+
+    label = &quot;\n 图 17-29    客户端接收到节点 7002 返回的 ASK 错误&quot;;
+
+    rankdir = LR;
+
+    splines = polyline;
+
+    //
+
+    node [shape = box, height = 2];
+
+    client [label = &quot;客户端&quot;];
+
+    node7002 [label = &quot;节点 7002&quot;];
+
+    //
+
+    client -&gt; node7002 [label = &quot;GET \&quot;love\&quot;&quot;];
+
+    client -&gt; node7002 [dir = back, label = &quot;\nASK 16198 127.0.0.1:7003&quot;];
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-75e479adc85e31d1d84e0e00d53a954bd23c7f16.png" alt="digraph {
+
+    label = &quot;\n 图 17-30    客户端转向至节点 7003&quot;;
+
+    rankdir = LR;
+
+    splines = polyline
+
+    //
+
+    node [shape = box, height = 3];
+
+    client [label = &quot;客户端&quot;];
+
+    node7003 [label = &quot;节点 7003&quot;];
+
+    //
+
+    client -&gt; node7003 [label = &quot;转向&quot;];
+
+    client -&gt; node7003 [label = &quot;ASKING&quot;];
+
+    client -&gt; node7003 [label = &quot;\n GET \&quot;love\&quot;&quot;];
+
+    client -&gt; node7003 [dir = back, label = &quot;\n\&quot;you get the key 'love'\&quot;&quot;];
+
+}" />
+</p>
+<hr class="docutils" />
+<p>节点判断是否执行客户端命令的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-b5c4a372c2e4808f4b355402bb92993399b93b1a.png" alt="digraph {
+
+    label = &quot;\n 图 17-31    节点判断是否执行客户端命令的过程&quot;;
+
+    node [shape = box];
+
+    //
+
+    send_command [label = &quot;客户端向节点发送关于槽 i 的命令&quot;];
+
+    node_handle_slot_or_not [shape = diamond, label = &quot;槽 i 是否指派给了节点？&quot;];
+
+    exec_command [label = &quot;节点执行客户端发送的命令&quot;];
+
+    importing_slot_or_not [shape = diamond, label = &quot;节点是否正在导入槽 i ？&quot;];
+
+    client_get_asking_flag_or_not [shape = diamond, label = &quot;客户端是否带有 \n ASKING 标识？&quot;];
+
+    return_moved [label = &quot;节点向客户端返回 MOVED 命令&quot;];
+
+    //
+
+    send_command -&gt; node_handle_slot_or_not;
+
+    node_handle_slot_or_not -&gt; exec_command [label = &quot;是&quot;];
+
+    node_handle_slot_or_not -&gt; importing_slot_or_not [label = &quot;否&quot;];
+
+    importing_slot_or_not -&gt; client_get_asking_flag_or_not [label = &quot;是&quot;];
+
+    client_get_asking_flag_or_not -&gt; exec_command [label = &quot;是&quot;];
+
+    importing_slot_or_not -&gt; return_moved [label = &quot;否&quot;];
+
+    client_get_asking_flag_or_not -&gt; return_moved [label = &quot;否&quot;];
+
+}" />
+</p>
+</div>
+<div class="section" id="id6">
+<h2>复制与故障转移<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h2>
+<p>Redis 集群对失效节点进行故障转移的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-6524fa7af415bc0a44b4a758ea77d11dd2636705.png" alt="digraph {
+
+    label = &quot;\n 图 17-32    设置节点 7004 和节点 7005 成为节点 7000 的从节点&quot;;
+
+    rankdir = LR;
+
+    subgraph cluster_a {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        node [shape = doublecircle]
+
+        7000;
+
+        7001;
+
+        7002;
+
+        7003;
+
+        node [shape = circle]
+
+        7005;
+
+        7004;
+
+        edge [dir = back, label = &quot;复制&quot;]
+
+        7000 -&gt; 7004
+
+        7000 -&gt; 7005
+
+        edge [style = invis, label = &quot;&quot;]
+
+        7002 -&gt; 7003
+
+    }
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-fe0e19a121e5b75eb82ccacfa6215c26c0ae8e39.png" alt="digraph {
+
+    label = &quot;\n 图 17-33    节点 7004 成为新的主节点&quot;;
+
+    rankdir = LR;
+
+    subgraph cluster_a {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        node [shape = doublecircle];
+
+        7000 [style = dashed]
+
+        7001;
+
+        7002;
+
+        7003;
+
+        7004;
+
+        node [shape = circle]
+
+        7005;
+
+        edge [dir = back, label = &quot;复制&quot;]
+
+        7004 -&gt; 7005
+
+        edge [style = invis, label = &quot;&quot;]
+
+        7000 -&gt; 7001
+
+        7002 -&gt; 7003
+
+    }
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-9dc2a416a4fd1f6e3b43da2b134e40c706da600a.png" alt="digraph {
+
+    label = &quot;\n 图 17-34    重新上线的节点 7000 成为节点 7004 的从节点&quot;;
+
+    rankdir = LR;
+
+    subgraph cluster_a {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        node [shape = doublecircle];
+
+        7001;
+
+        7002;
+
+        7003;
+
+        7004;
+
+        node [shape = circle]
+
+        7000
+
+        7005;
+
+        edge [dir = back, label = &quot;复制&quot;]
+
+        7004 -&gt; 7005
+
+        7004 -&gt; 7000
+
+        edge [style = invis, label = &quot;&quot;]
+
+        7001 -&gt; 7002 -&gt; 7003
+
+    }
+
+}" />
+</p>
+<hr class="docutils" />
+<p>节点的下线报告示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-1c0cfe14e966f5288e61b6e9ac43465aea156bde.png" alt="digraph {
+
+    label = &quot;\n 图 17-38    节点 7000 的下线报告&quot;
+
+    rankdir = LR
+
+    node [shape = record]
+
+    node7000 [label = &quot; &lt;head&gt; clusterNode | ... | flags \n REDIS_NODE_MASTER \n &amp; \n REDIS_NODE_PFAIL | ip \n \&quot;127.0.0.1\&quot; | port \n 7000 | &lt;fail_reports&gt; fail_reports | ... &quot;]
+
+    node7002 [label = &quot; &lt;head&gt; clusterNode | ... | flags \n REDIS_NODE_MASTER | ip \n \&quot;127.0.0.1\&quot; | port \n 7002 | ... &quot;]
+
+    node7003 [label = &quot; &lt;head&gt; clusterNode | ... | flags \n REDIS_NODE_MASTER | ip \n \&quot;127.0.0.1\&quot; | port \n 7003 | ... &quot;]
+
+    report7002 [label = &quot; &lt;head&gt; clusterNodeFailReport | &lt;pnode&gt; node | time \n 1390525039000&quot;]
+
+    report7003 [label = &quot; &lt;head&gt; clusterNodeFailReport | &lt;pnode&gt; node | time \n 1390525039321&quot;]
+
+    node7000:fail_reports -&gt; report7002:head -&gt; report7003:head
+
+    report7002:pnode -&gt; node7002:head
+    report7003:pnode -&gt; node7003:head
+
+}" />
+</p>
+<hr class="docutils" />
+<p>节点向集群广播 <code class="docutils literal"><span class="pre">FAIL</span></code> 消息。</p>
+<p class="graphviz">
+<img src="_images/graphviz-c591fae308f56fa399fa9e52156bd2a568b144bf.png" alt="digraph {
+
+    label = &quot;\n 图 17-39    节点 7001 向集群广播 FAIL 消息&quot;
+
+    rankdir = LR;
+
+    subgraph cluster_a {
+
+        label = &quot;集群&quot;;
+
+        style = dashed;
+
+        node [shape = doublecircle]
+
+        7000 [style = dashed]
+
+        7001;
+
+        7002;
+
+        7003;
+
+        node [shape = circle]
+
+        7004;
+
+        7005;
+
+        edge [dir = back, label = &quot;复制&quot;]
+
+        7000 -&gt; 7004
+
+        7000 -&gt; 7005
+
+        edge [dir = forward, label = &quot;发送 FAIL 消息&quot;]
+
+        7001 -&gt; 7002
+        7001 -&gt; 7003
+        7001 -&gt; 7004
+        7001 -&gt; 7005
+
+    }
+
+}" />
+</p>
+</div>
+<div class="section" id="id7">
+<h2>消息<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h2>
+<p>集群中的节点通过发送消息来将一个节点标记为下线的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-74e2b6c26627aedbdd10295cfddd6bf6ee29d9ac.png" alt="digraph {
+
+    label = &quot;\n 图 17-42    节点 7001 将节点 7000 标记为已下线&quot;;
+
+    node [shape = circle];
+
+    subgraph cluster_cluster {
+
+        label = &quot;集群&quot;;
+
+        node7000 [label = &quot;7000&quot;, style = dashed];
+        node7001 [label = &quot;7001&quot;];
+        node7002 [label = &quot;7002&quot;];
+        node7003 [label = &quot;7003&quot;];
+
+        node7001 -&gt; node7000 [label = &quot;标记为\n已下线&quot;];
+
+        edge [style = invis];
+        node7001 -&gt; node7002 [label = &quot;发送 FAIL 消息&quot;];
+        node7001 -&gt; node7003 [label = &quot;发送 FAIL 消息&quot;];
+
+        style = dashed;
+
+    }
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-e2e030e0a517bddc4c8c542b6876efeed2469941.png" alt="digraph {
+
+    label = &quot;\n 图 17-43    节点 7001 向集群广播 FAIL 消息&quot;;
+
+    node [shape = circle];
+
+    subgraph cluster_cluster {
+
+        label = &quot;集群&quot;;
+
+        node7000 [label = &quot;7000&quot;, style = dashed];
+        node7001 [label = &quot;7001&quot;];
+        node7002 [label = &quot;7002&quot;];
+        node7003 [label = &quot;7003&quot;];
+
+        node7001 -&gt; node7000 [style = invis];
+
+        edge [label = &quot;发送 \nFAIL 消息&quot;];
+
+        node7001 -&gt; node7002;
+        node7001 -&gt; node7003;
+
+        style = dashed;
+
+    }
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-c4408a7984bbcfdb233e87165044e609a7846ae2.png" alt="digraph {
+
+    label = &quot;\n 图 17-44    节点 7002 和节点 7003 也将节点 7000 标记为已下线&quot;;
+
+    node [shape = circle];
+
+    subgraph cluster_cluster {
+
+        label = &quot;集群&quot;;
+
+        node7003 [label = &quot;7003&quot;];
+        node7002 [label = &quot;7002&quot;];
+        node7001 [label = &quot;7001&quot;];
+        node7000 [label = &quot;7000&quot;, style = dashed];
+
+        node7001 -&gt; node7000 [style = invis];
+
+        edge [label = &quot;标记为\n已下线&quot;];
+
+        node7002 -&gt; node7000;
+        node7003 -&gt; node7000;
+
+        style = dashed;
+
+    }
+
+}" />
+</p>
+<hr class="docutils" />
+<p>接收到 <code class="docutils literal"><span class="pre">PUBLISH</span></code> 命令的节点向集群中的其他节点发送 <code class="docutils literal"><span class="pre">PUBLISH</span></code> 消息。</p>
+<p class="graphviz">
+<img src="_images/graphviz-a6bed3355b74c4c1790c715812e50149bbec36c4.png" alt="digraph {
+
+    label = &quot;\n 图 17-45    接收到 PUBLISH 命令的节点 7000 向集群广播 PUBLISH 消息&quot;;
+
+    node [shape = circle];
+
+    rankdir = LR;
+
+    client [label = &quot;客户端&quot;];
+
+    subgraph cluster_cluster {
+
+        label = &quot;集群&quot;;
+
+        node7003 [label = &quot;7003&quot;];
+        node7002 [label = &quot;7002&quot;];
+        node7001 [label = &quot;7001&quot;];
+        node7000 [label = &quot;7000&quot;];
+
+
+        edge [label = &quot;发送 \n PUBLISH \n 消息&quot;];
+
+        node7000 -&gt; node7001;
+        node7000 -&gt; node7002;
+        node7000 -&gt; node7003;
+
+        style = dashed;
+
+    }
+
+        client -&gt; node7000 [label = &quot;发送 \n PUBLISH \n 命令&quot;];
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">PUBLISH</span></code> 消息中包含的 <code class="docutils literal"><span class="pre">clusterMsgDataPublish</span></code> 结构示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-0336c8bb5dab19b0a302faeb107db2e7a5f3d291.png" alt="digraph {
+
+    label = &quot;\n 图 17-46    clusterMsgDataPublish 结构示例&quot;;
+
+    node [shape = record];
+
+    rankdir = LR;
+
+    clusterMsgDataPublish [label = &quot; clusterMsgDataPublish | channel_len \n 7 | message_len \n 5 | &lt;bulk_data&gt; bulk_data &quot;];
+
+    bulk_data [label = &quot; { 'n' | 'e' | 'w' | 's' | '.' | 'i' | 't' | 'h' | 'e' | 'l' | 'l' | 'o' } &quot;];
+
+    clusterMsgDataPublish:bulk_data -&gt; bulk_data;
+
+}" />
+</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">第 17 章： 集群</a><ul>
+<li><a class="reference internal" href="#id2">节点</a></li>
+<li><a class="reference internal" href="#id3">槽指派</a></li>
+<li><a class="reference internal" href="#id4">在集群中执行命令</a></li>
+<li><a class="reference internal" href="#id5">重新分片</a></li>
+<li><a class="reference internal" href="#ask">ASK 错误</a></li>
+<li><a class="reference internal" href="#id6">复制与故障转移</a></li>
+<li><a class="reference internal" href="#id7">消息</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="16-sentinel.html"
+                        title="previous chapter">第 16 章： Sentinel</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="18-pubsub.html"
+                        title="next chapter">第 18 章： 发布与订阅</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/17-cluster.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="18-pubsub.html" title="第 18 章： 发布与订阅"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="16-sentinel.html" title="第 16 章： Sentinel"
+             >previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, 黄健宏（huangz）.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>第 11 章： AOF 持久化 &mdash; 《Redis 设计与实现》图片集</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="《Redis 设计与实现》图片集" href="index.html" />
+    <link rel="next" title="第 12 章： 事件" href="12-event.html" />
+    <link rel="prev" title="第 10 章：RDB 持久化" href="10-rdb.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="12-event.html" title="第 12 章： 事件"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="10-rdb.html" title="第 10 章：RDB 持久化"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="aof">
+<h1>第 11 章： AOF 持久化<a class="headerlink" href="#aof" title="Permalink to this headline">¶</a></h1>
+<p>Redis 服务器在进行 AOF 持久化时，
+客户端、服务器与 AOF 文件之间的互动。</p>
+<p class="graphviz">
+<img src="_images/graphviz-16fdfdbd47a104dd630d64c3fac994487c946be3.png" alt="digraph {
+
+    label = &quot;\n图 11-1    AOF 持久化&quot;;
+
+    rankdir = LR;
+
+    //
+
+    client [label = &quot;客户端&quot;, shape = circle, height = 1.3, width = 1.3];
+
+    server [label = &quot;服务器&quot;, shape = box, width = 1.0, height = 2, width = 1.5];
+
+    aof [label = &quot;AOF 文件&quot;, shape = note, height = 1.3];
+
+    //
+
+    client -&gt; server [label = &quot;发送写命令&quot;];
+
+    server -&gt; aof [label = &quot;保存被执行的写命令&quot;];
+
+}" />
+</p>
+<hr class="docutils" />
+<p>AOF 文件的载入过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-47f5d1e9984e43cd2871a00527cc9c7c503e6500.png" alt="digraph {
+
+    label = &quot;\n 图 11-2    AOF 文件载入过程&quot;
+
+    //
+
+    node [shape = box]
+
+    start_loading [label = &quot;服务器启动载入程序&quot;, width = 4]
+
+    create_fake_client [label = &quot;创建伪客户端&quot;, width = 4]
+
+    load_a_command_from_aof [label = &quot;从 AOF 文件中分析并读取出一条写命令&quot;, width = 4]
+
+    exec_command_via_fake_client [label = &quot;使用伪客户端执行写命令&quot;]
+
+    all_command_exec_or_not [shape = diamond, label = &quot;AOF 文件中的所有写命令\n都已经被执行完毕？&quot;]
+
+    done [label = &quot;载入完毕&quot;, width = 4]
+
+    //
+
+    start_loading -&gt; create_fake_client -&gt; load_a_command_from_aof -&gt; exec_command_via_fake_client -&gt; all_command_exec_or_not;
+
+    all_command_exec_or_not -&gt; done [label = &quot;是&quot;]
+
+    all_command_exec_or_not -&gt; load_a_command_from_aof [label = &quot;否&quot;]
+
+}" />
+</p>
+<hr class="docutils" />
+<p>在进行 AOF 重写时，
+服务器会同时将命令发送给 AOF 文件和 AOF 重写缓冲区。</p>
+<p class="graphviz">
+<img src="_images/graphviz-18f207f6ae975d0ef15ddc37d0c25279f535ef5f.png" alt="digraph {
+
+    label = &quot;图 11-4    服务器同时将命令发送给 AOF 文件和 AOF 重写缓冲区&quot;;
+
+    rankdir = LR;
+
+    client [label = &quot;客户端&quot;, shape = circle, height = 1.5];
+
+    subgraph cluster_server {
+
+        label = &quot;服务器&quot;;
+
+    command_handler [label = &quot;命\n令\n处\n理\n器&quot;, shape = box, height = 2.0];
+
+    aof_rewrite_buf [label = &quot;AOF 重写缓冲区&quot;, shape = box];
+    aof_buf [label = &quot;AOF 缓冲区&quot;, shape = box];
+
+    command_handler -&gt; aof_rewrite_buf [label = &quot;追加命令&quot;];
+    command_handler -&gt; aof_buf [label = &quot;追加命令&quot;];
+
+
+    }
+
+    client -&gt; command_handler [label = &quot;发送命令&quot;];
+}" />
+</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="10-rdb.html"
+                        title="previous chapter">第 10 章：RDB 持久化</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="12-event.html"
+                        title="next chapter">第 12 章： 事件</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/11-aof.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="12-event.html" title="第 12 章： 事件"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="10-rdb.html" title="第 10 章：RDB 持久化"
+             >previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, 黄健宏（huangz）.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

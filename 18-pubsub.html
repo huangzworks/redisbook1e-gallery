@@ -1,0 +1,368 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>第 18 章： 发布与订阅 &mdash; 《Redis 设计与实现》图片集</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="《Redis 设计与实现》图片集" href="index.html" />
+    <link rel="next" title="第 19 章： 事务" href="19-transaction.html" />
+    <link rel="prev" title="第 17 章： 集群" href="17-cluster.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="19-transaction.html" title="第 19 章： 事务"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="17-cluster.html" title="第 17 章： 集群"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="id1">
+<h1>第 18 章： 发布与订阅<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p>客户端订阅频道。</p>
+<p class="graphviz">
+<img src="_images/graphviz-25889daa26b8ba11043c7f08f5c96b6a0d7e1173.png" alt="digraph {
+
+    label = &quot;\n 图 18-1    news.it 频道和它的三个订阅者&quot;;
+
+    rankdir = BT;
+
+    //
+
+    news_it [label = &quot;news.it 频道&quot;, shape = box, width = 3.0];
+
+    client_1 [label = &quot;客户端 A&quot;];
+    client_2 [label = &quot;客户端 B&quot;];
+    client_3 [label = &quot;客户端 C&quot;];
+
+    //
+
+    edge [label = &quot;订阅&quot;];
+
+    client_1 -&gt; news_it;
+    client_2 -&gt; news_it;
+    client_3 -&gt; news_it;
+}" />
+</p>
+<p>客户端向频道发送消息，
+消息被传递至各个订阅者。</p>
+<p class="graphviz">
+<img src="_images/graphviz-0c8815c9d27b05c73c8c67c5e8eb59c6cf5e2e3a.png" alt="digraph {
+
+    label = &quot;\n 图 18-2    向 news.it 频道发送消息&quot;;
+
+    //
+
+    publish [label = &quot;PUBLISH \&quot;news.it\&quot; \&quot;hello\&quot;&quot;, shape = plaintext];
+
+    news_it [label = &quot;news.it 频道&quot;, shape = box, width = 3.0];
+
+    client_1 [label = &quot;客户端 A&quot;];
+    client_2 [label = &quot;客户端 B&quot;];
+    client_3 [label = &quot;客户端 C&quot;];
+
+    //
+
+    edge [style = dashed];
+
+    publish -&gt; news_it;
+
+    edge [label = &quot;\&quot;hello\&quot;&quot;];
+
+    news_it -&gt; client_1;
+    news_it -&gt; client_2;
+    news_it -&gt; client_3;
+
+}" />
+</p>
+<hr class="docutils" />
+<p>客户端订阅模式。</p>
+<p class="graphviz">
+<img src="_images/graphviz-e106e8482814f2397eceeccefc20cc1b7df7fee9.png" alt="digraph {
+
+    label = &quot;\n 图 18-3     频道和模式的订阅状态&quot;;
+
+    rankdir = BT;
+
+    //
+
+    news_et [label = &quot;news.et 频道&quot;, shape = box, width = 3.0];
+
+    news_it [label = &quot;news.it 频道&quot;, shape = box, width = 3.0];
+
+    news_iet [label = &quot;news.[ie]t 模式&quot;, shape = hexagon, width = 3.0];
+
+    node [shape = ellipse];
+
+    client_1 [label = &quot;客户端 A&quot;];
+    client_2 [label = &quot;客户端 B&quot;];
+    client_3 [label = &quot;客户端 C&quot;];
+    client_4 [label = &quot;客户端 D&quot;];
+
+    //
+
+    client_1 -&gt; news_it [label = &quot;订阅&quot;];
+
+    client_2 -&gt; news_et [label = &quot;订阅&quot;];
+
+    news_iet -&gt; news_et [dir = back, label = &quot;匹配&quot;];
+    news_iet -&gt; news_it [dir = back, label = &quot;匹配&quot;];
+
+    edge [label = &quot;订阅&quot;];
+    client_3 -&gt; news_iet;
+    client_4 -&gt; news_iet;
+}" />
+</p>
+<p>客户端向频道发送消息，
+消息被传递给正在订阅匹配模式的订阅者。</p>
+<p class="graphviz">
+<img src="_images/graphviz-f64be6f3116548c779e2357dae83bec87c04bd50.png" alt="digraph {
+
+    label = &quot;\n 图 18-4    将消息发送给频道的订阅者和匹配模式的订阅者&quot;;
+
+    rankdir = BT;
+
+    //
+
+    news_et [label = &quot;news.et 频道&quot;, shape = box, width = 3.0];
+
+    news_it [label = &quot;news.it 频道&quot;, shape = box, width = 3.0];
+
+    news_iet [label = &quot;news.[ie]t 模式&quot;, shape = hexagon, width = 3.0];
+
+    publish [label = &quot;PUBLISH \&quot;news.it\&quot; \&quot;hello\&quot;&quot;, shape = plaintext];
+
+    node [shape = ellipse];
+
+    client_1 [label = &quot;客户端 A&quot;];
+    client_2 [label = &quot;客户端 B&quot;];
+    client_3 [label = &quot;客户端 C&quot;];
+    client_4 [label = &quot;客户端 D&quot;];
+
+    //
+
+
+    client_1 -&gt; news_it [dir = back, label = &quot;\&quot;hello\&quot;&quot;, style = dashed];
+
+    client_2 -&gt; news_et [label = &quot;订阅&quot;];
+
+    news_iet -&gt; news_et [dir = back, label = &quot;匹配&quot;];
+    news_iet -&gt; news_it [dir = back, label = &quot;匹配&quot;, style = dashed];
+
+    edge [dir = back, label = &quot;\&quot;hello\&quot;&quot;, style = dashed];
+    client_3 -&gt; news_iet;
+    client_4 -&gt; news_iet;
+
+    news_it -&gt; publish [dir = back, style = dashed, label =&quot;&quot;];
+}" />
+</p>
+<p>另一个模式被匹配的例子。</p>
+<p class="graphviz">
+<img src="_images/graphviz-c6b4b1ef3f52384cfcb880a270408fa7ccdbcb2a.png" alt="digraph {
+
+    label = &quot;\n 图 18-5    将消息发送给频道的订阅者和匹配模式的订阅者&quot;;
+
+    rankdir = BT;
+
+    //
+
+    news_et [label = &quot;news.et 频道&quot;, shape = box, width = 3.0];
+
+    news_it [label = &quot;news.it 频道&quot;, shape = box, width = 3.0];
+
+    news_iet [label = &quot;news.[ie]t 模式&quot;, shape = hexagon, width = 3.0];
+
+    publish [label = &quot;PUBLISH \&quot;news.et\&quot; \&quot;world\&quot;&quot;, shape = plaintext];
+
+    node [shape = ellipse];
+
+    client_1 [label = &quot;客户端 A&quot;];
+    client_2 [label = &quot;客户端 B&quot;];
+    client_3 [label = &quot;客户端 C&quot;];
+    client_4 [label = &quot;客户端 D&quot;];
+
+    //
+
+
+    client_1 -&gt; news_it [label = &quot;订阅&quot;];
+
+    client_2 -&gt; news_et [dir = back, label = &quot;\&quot;world\&quot;&quot;, style = dashed];
+
+    news_iet -&gt; news_et [dir = back, label = &quot;匹配&quot;, style = dashed];
+    news_iet -&gt; news_it [dir = back, label = &quot;匹配&quot;];
+
+    edge [dir = back, label = &quot;\&quot;world\&quot;&quot;, style = dashed];
+    client_3 -&gt; news_iet;
+    client_4 -&gt; news_iet;
+
+    news_et -&gt; publish [dir = back, style = dashed, label =&quot;&quot;];
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">pubsub_channels</span></code> 字典示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-a81ae64799855f0aa549cece1fd738475dcc4313.png" alt="digraph {
+
+    label = &quot;\n 图 18-6    一个 pubsub_channels 字典示例&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    pubsub_channels [label = &quot; pubsub_channels | &lt;news_it&gt; \&quot;news.it\&quot; | &lt;news_sport&gt; \&quot;news.sport\&quot; | &lt;news_business&gt; \&quot;news.business\&quot; &quot;, height = 3, width = 2.2];
+
+    client_1 [label = &quot;client-1&quot;];
+    client_2 [label = &quot;client-2&quot;];
+    client_3 [label = &quot;client-3&quot;];
+    client_4 [label = &quot;client-4&quot;];
+    client5 [label = &quot;client-5&quot;];
+    client6 [label = &quot;client-6&quot;];
+
+    //
+
+    pubsub_channels:news_it -&gt; client_1; client_1 -&gt; client_2; client_2 -&gt; client_3;
+
+    pubsub_channels:news_sport -&gt; client_4;
+
+    pubsub_channels:news_business -&gt; client5 -&gt; client6;
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">pubsubPattern</span></code> 结构示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-52b76393460eba28968c4ef6b5fc3b3ceba0ff40.png" alt="digraph {
+
+    label = &quot;\n 图 18-10    pubsubPattern 结构示例&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape =record];
+
+    pubsubPattern [label = &quot; pubsubPattern | client \n client-9 | pattern \n \&quot;news.*\&quot; &quot;];
+}" />
+</p>
+<p><code class="docutils literal"><span class="pre">pubsub_patterns</span></code> 链表的示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-c3da1c52931024fdcc850654a4f4e061312b1b33.png" alt="digraph {
+
+    label = &quot;\n 图 18-11    pubsub_patterns 链表示例&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    redisServer [label = &quot;redisServer | ... | &lt;pubsub_patterns&gt; pubsub_patterns | ...&quot;, height = 2.2, width = 2.2];
+
+    all_music [label = &quot; pubsubPattern | client \n client-7 | pattern \n \&quot;music.*\&quot; &quot;];
+
+    all_book [label = &quot; pubsubPattern | client \n client-8 | pattern \n \&quot;book.*\&quot; &quot;];
+
+    all_news [label = &quot; pubsubPattern | client \n client-9 | pattern \n \&quot;news.*\&quot; &quot;];
+
+    //
+
+    redisServer:pubsub_patterns -&gt; all_music;
+
+    all_music -&gt; all_book;
+
+    all_book -&gt; all_news;
+}" />
+</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="17-cluster.html"
+                        title="previous chapter">第 17 章： 集群</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="19-transaction.html"
+                        title="next chapter">第 19 章： 事务</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/18-pubsub.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="19-transaction.html" title="第 19 章： 事务"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="17-cluster.html" title="第 17 章： 集群"
+             >previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, 黄健宏（huangz）.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

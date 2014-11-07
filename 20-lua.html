@@ -1,0 +1,346 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>第 20 章： Lua 脚本 &mdash; 《Redis 设计与实现》图片集</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="《Redis 设计与实现》图片集" href="index.html" />
+    <link rel="next" title="第 21 章： 排序" href="21-sort.html" />
+    <link rel="prev" title="第 19 章： 事务" href="19-transaction.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="21-sort.html" title="第 21 章： 排序"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="19-transaction.html" title="第 19 章： 事务"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="lua">
+<h1>第 20 章： Lua 脚本<a class="headerlink" href="#lua" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id1">
+<h2>创建并修改 Lua 环境<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>服务器与 Lua 环境。</p>
+<p class="graphviz">
+<img src="_images/graphviz-41e00edf2cf2f55e7af0b403dd6019e90939b9c4.png" alt="digraph {
+
+    label = &quot;\n图 20-1    服务器状态中的 Lua 环境&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    server [label = &quot;redisServer | ... | &lt;lua&gt; lua | ...&quot;, width = 2.0, height = 2.0];
+
+    lua [label = &quot;Lua 环境&quot;, shape = circle];
+
+    server:lua -&gt; lua;
+
+}" />
+</p>
+</div>
+<div class="section" id="id2">
+<h2>Lua 环境协作组件<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>Lua 脚本执行 Redis 命令时的通讯步骤。</p>
+<p class="graphviz">
+<img src="_images/graphviz-1df0a0a34bb204c0b0b05a78e3d943f3c9072a6b.png" alt="digraph {
+
+    label = &quot;\n图 20-2    Lua 脚本执行 Redis 命令时的通讯步骤&quot;;
+
+    rankdir = LR;
+
+    node [shape = record, height = 2.0];
+
+    splines = polyline;
+
+    //
+
+    lua [label = &quot;L\nu\na\n环\n境&quot;];
+    fake_client [label = &quot;伪\n客\n户\n端&quot;];
+    eval [label = &quot;命\n令\n执\n行\n器&quot;];
+
+    lua -&gt; fake_client [label = &quot;1) 传送 redis.call 函数\n想要执行的 Redis 命令&quot;]
+    fake_client -&gt; eval [label = &quot;2) 将命令传给执行器执行&quot;];
+    lua -&gt; fake_client [dir = back, label = &quot;\n4) 将命令结果传回给 Lua 环境&quot;];
+    fake_client -&gt; eval [dir = back, label = &quot;\n3) 返回命令的执行结果&quot;];
+}" />
+</p>
+<p>作为例子，
+图 20-3 展示了 Lua 脚本在执行以下命令时：</p>
+<div class="highlight-python"><div class="highlight"><pre>redis&gt; EVAL &quot;return redis.call(&#39;DBSIZE&#39;)&quot; 0
+(integer) 10086
+</pre></div>
+</div>
+<p>Lua 环境、伪客户端、命令执行器三者之间的通讯过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-b9d78830d209f9489af2361b728cb1e5349bb9ec.png" alt="digraph {
+
+    label = &quot;\n图 20-3    Lua 脚本执行 DBSIZE 命令时的通讯步骤&quot;;
+
+    rankdir = LR;
+
+    node [shape = record, height = 2.0];
+
+    splines = polyline;
+
+    //
+
+    lua [label = &quot;L\nu\na\n环\n境&quot;];
+    fake_client [label = &quot;伪\n客\n户\n端&quot;];
+    eval [label = &quot;命\n令\n执\n行\n器&quot;];
+
+    lua -&gt; fake_client [label = &quot;1) 传送 DBSIZE 请求&quot;]
+    fake_client -&gt; eval [label = &quot;2) 将 DBSIZE 命令传给执行器执行&quot;];
+    lua -&gt; fake_client [dir = back, label = &quot;\n4) 将命令结果 10086 传回给 Lua 环境&quot;];
+    fake_client -&gt; eval [dir = back, label = &quot;\n3) 返回命令的执行结果 10086&quot;];
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">lua_scripts</span></code> 字典示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-0202a0b9f583aaab80234c905ba9f9b877a69295.png" alt="digraph {
+
+    label = &quot;\n 图 20-4    lua_scripts 字典示例&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    //
+
+    lua_scripts [label = &quot;lua_scripts | ... | &lt;1&gt; \&quot;2f31ba2bb6d6a0f42cc159d2e2dad55440778de3\&quot; | &lt;2&gt; \&quot;a27e7e8a43702b7046d4f6a7ccf5b60cef6b9bd9\&quot; | &lt;3&gt; \&quot;4475bfb5919b5ad16424cb50f74d4724ae833e72\&quot; | ... &quot;];
+
+    node [shape = plaintext];
+
+    one [label = &quot;\&quot;return 'hi'\&quot;&quot;];
+    two [label = &quot;\&quot;return 1+1\&quot;&quot;];
+    three [label = &quot;\&quot;return 2*2\&quot;&quot;];
+
+    lua_scripts:1 -&gt; one;
+    lua_scripts:2 -&gt; two;
+    lua_scripts:3 -&gt; three;
+}" />
+</p>
+</div>
+<div class="section" id="id3">
+<h2>脚本管理命令的实现<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>带有超时处理钩子的脚本的运行过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-3b0c394f6034e4687623d85d85488802781242d3.png" alt="digraph {
+
+    label = &quot;\n图 20-8    带有超时处理钩子的脚本的执行过程&quot;;
+
+    node [shape = box];
+
+    start_script [label = &quot;开始执行脚本&quot;, width = 3.5];
+
+    finish_or_not [label = &quot;脚本执行完毕？&quot;, shape = diamond];
+
+    finish [label = &quot;返回执行结果&quot;];
+
+    overtime_or_not [label = &quot;定期调用钩子\n检查脚本\n是否已超时运行？&quot;, shape = diamond];
+
+    kill_or_shutdown_arrive_or_not [label = &quot;有 SCRIPT KILL\n或者\nSHUTDOWN NOSAVE\n到达？&quot;, shape = diamond];
+
+    stop_script [label = &quot;执行 SCRIPT KILL \n 或者 SHUTDOWN&quot;];
+
+    keep_running [label = &quot;继续执行脚本&quot;];
+
+    //
+
+    start_script -&gt; finish_or_not;
+
+    finish_or_not -&gt; finish [label = &quot;是&quot;];
+
+    finish_or_not -&gt; overtime_or_not [label = &quot;否&quot;];
+
+    overtime_or_not -&gt; kill_or_shutdown_arrive_or_not [label = &quot;是&quot;];
+
+    overtime_or_not -&gt; keep_running [label = &quot;否&quot;];
+
+    kill_or_shutdown_arrive_or_not -&gt; stop_script [label = &quot;是&quot;];
+
+    kill_or_shutdown_arrive_or_not -&gt; keep_running [label = &quot;否&quot;];
+
+    keep_running -&gt; finish_or_not;
+
+}" />
+</p>
+</div>
+<div class="section" id="id4">
+<h2>脚本复制<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<p>将脚本命令传播给从服务器。</p>
+<p class="graphviz">
+<img src="_images/graphviz-3dd73e3a33d3296432d160fc0ce47ffc4a17aa68.png" alt="digraph {
+
+    label = &quot;\n 图 20-9    将脚本命令传播给从服务器&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = circle, width = 1.0];
+
+    client [label = &quot;客户端&quot;, width = 1.3];
+
+    master [label = &quot;主服务器&quot;, width = 1.3];
+
+    slave1 [label = &quot;从服务器 1&quot;];
+
+    slave2 [label = &quot;从服务器 2&quot;];
+
+    more [label = &quot;...&quot;, shape = plaintext];
+
+    slaveN [label = &quot;从服务器 N&quot;];
+
+    //
+
+    edge [label = &quot;EVAL \n 或者 \n SCRIPT FLUSH \n 或者 \n SCRIPT LOAD&quot;];
+
+    client -&gt; master;
+    master -&gt; slave1;
+    master -&gt; slave2;
+    master -&gt; more;
+    master -&gt; slaveN;
+
+}" />
+</p>
+<hr class="docutils" />
+<p>主服务器判断该传播 <code class="docutils literal"><span class="pre">EVAL</span></code> 命令还是 <code class="docutils literal"><span class="pre">EVALSHA</span></code> 命令的流程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-a7e2ff0ea8e7182c4548ed44a512dea0fd77f34c.png" alt="digraph {
+
+    label = &quot;\n 图 20-12    主服务器判断传播 EVAL 还是 EVALSHA 的过程&quot;;
+
+    node [shape = box];
+
+    command [label = &quot; 主服务器在本机执行完命令 \n EVALSHA &lt;sha1&gt; &lt;numkeys&gt; [key ...] [arg ...] &quot;];
+
+    sha1_exists_in_scriptcache_or_not [label = &quot;校验和 sha1 是否存在于 \n repl_scriptcache_dict 字典？&quot;, shape = diamond];
+
+    propagate_evalsha [label = &quot;传播 \n EVALSHA &lt;sha1&gt; &lt;numkeys&gt; [key ...] [arg ...]&quot;];
+
+    convert_evalsha_to_eval [label = &quot;将 EVALSHA 命令转换成等价的 EVAL 命令&quot;];
+
+    propagate_eval [label = &quot;传播 \n EVAL &lt;script&gt; &lt;numkeys&gt; [key ...] [arg ...]&quot;];
+
+    add_sha1_to_scriptcache [label = &quot;将 sha1 添加到 \n repl_scriptcache_dict 字典&quot;];
+
+    //
+
+    command -&gt; sha1_exists_in_scriptcache_or_not;
+
+    sha1_exists_in_scriptcache_or_not -&gt; propagate_evalsha [label = &quot;是&quot;];
+
+    sha1_exists_in_scriptcache_or_not -&gt; convert_evalsha_to_eval [label = &quot;否&quot;];
+
+    convert_evalsha_to_eval -&gt; propagate_eval;
+
+    propagate_eval -&gt; add_sha1_to_scriptcache;
+
+}" />
+</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">第 20 章： Lua 脚本</a><ul>
+<li><a class="reference internal" href="#id1">创建并修改 Lua 环境</a></li>
+<li><a class="reference internal" href="#id2">Lua 环境协作组件</a></li>
+<li><a class="reference internal" href="#id3">脚本管理命令的实现</a></li>
+<li><a class="reference internal" href="#id4">脚本复制</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="19-transaction.html"
+                        title="previous chapter">第 19 章： 事务</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="21-sort.html"
+                        title="next chapter">第 21 章： 排序</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/20-lua.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="21-sort.html" title="第 21 章： 排序"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="19-transaction.html" title="第 19 章： 事务"
+             >previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, 黄健宏（huangz）.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>第 22 章： 二进制位数组 &mdash; 《Redis 设计与实现》图片集</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="《Redis 设计与实现》图片集" href="index.html" />
+    <link rel="next" title="第 23 章： 慢查询日志" href="23-slowlog.html" />
+    <link rel="prev" title="第 21 章： 排序" href="21-sort.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="23-slowlog.html" title="第 23 章： 慢查询日志"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="21-sort.html" title="第 21 章： 排序"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="id1">
+<h1>第 22 章： 二进制位数组<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id2">
+<h2>位数组的表示<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p class="graphviz">
+<img src="_images/graphviz-65afe176bf56a8872089cc288d4d62f9bdc8fed8.png" alt="digraph {
+
+    label = &quot;\n 图 22-1    SDS 表示的位数组&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | ... | type \n REDIS_STRING | ... | &lt;ptr&gt; ptr &quot;];
+
+    sds [label = &quot; &lt;head&gt; sdshdr | free \n 0 | len \n 1 | &lt;buf&gt; buf &quot;];
+
+    buf [label = &quot; { buf[0] | buf[1] （空字符） } &quot;];
+
+    //
+
+    redisObject:ptr -&gt; sds:head;
+
+    sds:buf -&gt; buf;
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-9884e8dc3ab797ba53402067b9dfe9c4a37f49b1.png" alt="digraph {
+
+    label = &quot;\n 图 22-2    一字节长的位数组的 SDS 表示&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | ... | type \n REDIS_STRING | ... | &lt;ptr&gt; ptr &quot;];
+
+    sds [label = &quot; &lt;head&gt; sdshdr | free \n 0 | len \n 1 | &lt;buf&gt; buf &quot;];
+
+    buf [label = &quot; { buf[0] | 1 | 0 | 1 | 1 | 0 | 0 | 1 | 0 } | { buf[1] （空字符） } &quot;];
+
+    //
+
+    redisObject:ptr -&gt; sds:head;
+
+    sds:buf -&gt; buf;
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-52abb89ca49de2c84c04416ade157616077e0626.png" alt="digraph {
+
+    label = &quot;\n 图 22-3    三字节长的位数组的 SDS 表示&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | ... | type \n REDIS_STRING | ... | &lt;ptr&gt; ptr &quot;];
+
+    sds [label = &quot; &lt;head&gt; sdshdr | free \n 0 | len \n 3 | &lt;buf&gt; buf &quot;];
+
+    buf [label = &quot; { buf[0] | 1 | 0 | 1 | 0 | 0 | 1 | 0 | 1 } | { buf[1] | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 1 } | { buf[2] | 0 | 0 | 0 | 0 | 1 | 1 | 1 | 1 } | { buf[3] （空字符） } &quot;];
+
+    //
+
+    redisObject:ptr -&gt; sds:head;
+
+    sds:buf -&gt; buf;
+
+}" />
+</p>
+</div>
+<div class="section" id="getbit">
+<h2>GETBIT 命令的实现<a class="headerlink" href="#getbit" title="Permalink to this headline">¶</a></h2>
+<p class="graphviz">
+<img src="_images/graphviz-af9c5ceffb3aa070575982dbc1ef00d1f6496706.png" alt="digraph {
+
+    label = &quot;\n 图 22-4    查找并返回 offset 为 3 的二进制位的过程&quot;;
+
+    //
+
+    rankdir = LR;
+
+    point_to_buf0 [label = &quot;1) 定位到 buf[0] 字节&quot;, shape = plaintext];
+
+    point_to_idx3 [label = &quot;2) 返回第 4 个二进制位的值&quot;, shape = plaintext];
+
+    buf [label = &quot; { &lt;buf0&gt; buf[0] | 1 | 0 | 1 | &lt;idx3&gt; 1 | 0 | 0 | 1 | 0 } | { buf[1] （空字符） } &quot;, shape = record];
+
+    //
+
+    edge [style = dashed];
+
+    point_to_buf0 -&gt; buf:buf0;
+    point_to_idx3 -&gt; buf:idx3;
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-3a11dc81cb45b0791f28c01c2fd5c805a0c0d60c.png" alt="digraph {
+
+    label = &quot;\n 图 22-5    查找并返回 offset 为 10 的二进制位的过程&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    buf [label = &quot; { buf[0] | 1 | 0 | 1 | 0 | 0 | 1 | 0 | 1 } | { &lt;buf1&gt; buf[1] | 1 | 1 | &lt;bit&gt; 0 | 0 | 0 | 0 | 1 | 1 } | { buf[2] | 0 | 0 | 0 | 0 | 1 | 1 | 1 | 1 } | { buf[3] | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 } &quot;];
+
+    node [shape = plaintext];
+
+    point_to_buf [label = &quot;1） 定位到 buf[1] 字节&quot;];
+    point_to_bit [label = &quot;2） 返回第 3 个二进制位的值&quot;];
+
+    //
+
+    edge [style = dashed];
+    point_to_buf -&gt; buf:buf1;
+    point_to_bit -&gt; buf:bit;
+
+}" />
+</p>
+</div>
+<div class="section" id="setbit">
+<h2>SETBIT 命令的实现<a class="headerlink" href="#setbit" title="Permalink to this headline">¶</a></h2>
+<p>无须扩展的 <code class="docutils literal"><span class="pre">SETBIT</span></code> 命令。</p>
+<p class="graphviz">
+<img src="_images/graphviz-1aac5ce203184eb82535c67eb11255a59e5022a6.png" alt="digraph {
+
+    label = &quot;\n 图 22-6    SETBIT 命令的执行过程&quot;;
+
+    //
+
+    node [shape = plaintext];
+
+    point_to_byte [label = &quot;1） 定位到 buf[0] 字节&quot;];
+
+    point_to_bit [label = &quot;2）定位到 buf[0] 字节的第 2 个二进制位 \n 将位现在的值 0 保存到 oldvalue 变量 \n 然后将位的值设置为 1 &quot;];
+
+    buf [label = &quot; { { &lt;byte&gt; buf[0] | 1 | &lt;bit&gt; 0 | 1 | 1 | 0 | 0 | 1 | 0 } | { buf[1] （空字符） } } &quot;, shape = record];
+
+    //
+
+    edge [style = dashed];
+
+    point_to_byte -&gt; buf:byte;
+    point_to_bit -&gt; buf:bit;
+}" />
+</p>
+<p>需要进行扩展的 <code class="docutils literal"><span class="pre">SETBIT</span></code> 命令。</p>
+<p class="graphviz">
+<img src="_images/graphviz-f7f8465c6205b8c67bec7f091e0fe773f1223f80.png" alt="digraph {
+
+    label = &quot;\n 图 22-8    扩展空间之后的位数组&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | ... | type \n REDIS_STRING | ... | &lt;ptr&gt; ptr &quot;];
+
+    sds [label = &quot; &lt;head&gt; sdshdr | free \n 2 | len \n 2 | &lt;buf&gt; buf &quot;];
+
+    buf [label = &quot; { buf[0] | 1 | 0 | 1 | 1 | 0 | 0 | 1 | 0 } | { buf[1] | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 } | { buf[2] （空字符） } | { buf[3] （未使用） } | { buf[4] （未使用） } &quot;];
+
+    //
+
+    redisObject:ptr -&gt; sds:head;
+
+    sds:buf -&gt; buf;
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-e8d9b42919a10d2205cb57fca78dc87eaf816e8d.png" alt="digraph {
+
+    label = &quot;\n 图 22-9    SETBIT 命令的执行过程&quot;;
+
+    //
+
+    node [shape = plaintext];
+
+    point_to_byte [label = &quot;1）定位到 buf[1] 字节&quot;];
+    point_yo_bit [label = &quot;2）定位到 buf[1] 字节的第 5 个二进制位 \n 首先将位现在的值 0 保存到 oldvalue 变量 \n 然后将位的值设置为 1 &quot;];
+
+    node [shape = record];
+
+    buf [label = &quot; { { buf[0] | 1 | 0 | 1 | 1 | 0 | 0 | 1 | 0 } | { &lt;byte&gt; buf[1] | 0 | 0 | 0 | 0 | &lt;bit&gt; 0 | 0 | 0 | 0 } | { buf[2] （空字符） } | { buf[3] （未使用） } | { buf[4] （未使用） } } &quot;];
+
+    //
+
+    edge [style = dashed];
+
+    point_to_byte -&gt; buf:byte;
+    point_yo_bit -&gt; buf:bit;
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-37414e9c430061f7cbfc9a629018ebc4b7203e22.png" alt="digraph {
+
+    label = &quot;\n 图 22-10    执行 SETBIT 命令之后的位数组&quot;;
+
+    //
+
+    node [shape = record];
+
+    buf [label = &quot; { { buf[0] | 1 | 0 | 1 | 1 | 0 | 0 | 1 | 0 } | { &lt;byte&gt; buf[1] | 0 | 0 | 0 | 0 | &lt;bit&gt; 1 | 0 | 0 | 0 } | { buf[2] （空字符） } | { buf[3] （未使用） } | { buf[4] （未使用） } } &quot;];
+
+}" />
+</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">第 22 章： 二进制位数组</a><ul>
+<li><a class="reference internal" href="#id2">位数组的表示</a></li>
+<li><a class="reference internal" href="#getbit">GETBIT 命令的实现</a></li>
+<li><a class="reference internal" href="#setbit">SETBIT 命令的实现</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="21-sort.html"
+                        title="previous chapter">第 21 章： 排序</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="23-slowlog.html"
+                        title="next chapter">第 23 章： 慢查询日志</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/22-bit.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="23-slowlog.html" title="第 23 章： 慢查询日志"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="21-sort.html" title="第 21 章： 排序"
+             >previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, 黄健宏（huangz）.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

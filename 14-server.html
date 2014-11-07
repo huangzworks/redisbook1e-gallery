@@ -1,0 +1,243 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>第 14 章： 服务器 &mdash; 《Redis 设计与实现》图片集</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="《Redis 设计与实现》图片集" href="index.html" />
+    <link rel="next" title="第 15 章： 复制" href="15-replication.html" />
+    <link rel="prev" title="第 13 章： 客户端" href="13-client.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="15-replication.html" title="第 15 章： 复制"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="13-client.html" title="第 13 章： 客户端"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="id1">
+<h1>第 14 章： 服务器<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p>用户通过客户端向服务器发送命令请求的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-b4eb69529c920f353912414e6a7c6acb97084a58.png" alt="digraph {
+
+    label = &quot;\n\n 图 14-1    客户端接收并发送命令请求的过程&quot;;
+
+    rankdir = LR;
+
+    node [shape = plaintext];
+
+    user [label = &quot;用户&quot;];
+
+    client [label = &quot;客户端&quot;];
+
+    server [label = &quot;服务器&quot;];
+
+    //
+
+    user -&gt; client [label = &quot;键入命令请求&quot;];
+
+    client -&gt; server [label = &quot;将命令请求转换成协议格式\n然后发送&quot;];
+
+}" />
+</p>
+<hr class="docutils" />
+<p>服务器向用户返回命令回复的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-d5c3b1b146228297a7057d1d8fdf11e80badb1de.png" alt="digraph {
+
+    label = &quot;\n\n 图 14-8    客户端接收并打印命令回复的过程&quot;;
+
+    rankdir = LR;
+
+    node [shape = plaintext];
+
+    user [label = &quot;用户&quot;];
+
+    client [label = &quot;客户端&quot;];
+
+    server [label = &quot;服务器&quot;];
+
+    //
+
+    server -&gt; client [label = &quot;回复处理器将协议格式的\n命令回复返回给客户端&quot;];
+
+    client -&gt; user [label = &quot;将回复格式化成人类可读格式 \n 然后打印显示&quot;];
+
+}" />
+</p>
+<hr class="docutils" />
+<p>Redis 的命令表示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-38d1a443b5626e8fd50f5981d0f2abd010efe0d7.png" alt="digraph {
+
+    label = &quot;\n 图 14-4    命令表&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    commands [label = &quot; 命令表 | ... | &lt;set&gt; \&quot;set\&quot; | &lt;get&gt; \&quot;get\&quot; | ... | &lt;sadd&gt; \&quot;sadd\&quot; | ... | &lt;rpush&gt; \&quot;rpush\&quot; | ... | &lt;publish&gt; \&quot;publish\&quot; | ... &quot;, width = 2.0];
+
+    set [label = &quot; &lt;head&gt; redisCommand | name \n \&quot;set\&quot; | &lt;proc&gt; proc | arity \n -3 | sflags \n \&quot;wm\&quot; | ... &quot;];
+    get [label = &quot; &lt;head&gt; redisCommand | name \n \&quot;get\&quot; | &lt;proc&gt; proc | arity \n 2 | sflags \n \&quot;r\&quot; | ... &quot;];
+    //sadd [label = &quot; &lt;head&gt; redisCommand | name \n \&quot;sadd\&quot; | &lt;proc&gt; proc | arity \n -3 | sflags \n \&quot;wm\&quot; | ... &quot;];
+    //rpush [label = &quot; &lt;head&gt; redisCommand | name \n \&quot;rpush\&quot; | &lt;proc&gt; proc | arity \n -3 | sflags \n \&quot;wm\&quot; | ... &quot;];
+    //publish [label = &quot; &lt;head&gt; redisCommand | name \n \&quot;publish\&quot; | &lt;proc&gt; proc | arity \n 3 | sflags \n \&quot;pltr\&quot; | ... &quot;];
+
+    node [shape = plaintext];
+
+    setCommand [label = &quot;void setCommand(redisClient *c);&quot;];
+    getCommand [label = &quot;void getCommand(redisClient *c);&quot;];
+    //saddCommand;
+    //rpushCommand;
+    //publishCommand;
+
+    //
+
+    commands:set -&gt; set:head; set:proc -&gt; setCommand;
+    commands:get -&gt; get:head; get:proc -&gt; getCommand;
+    //commands:sadd -&gt; sadd:head; sadd:proc -&gt; saddCommand;
+    //commands:rpush -&gt; rpush:head; rpush:proc -&gt; rpushCommand;
+    //commands:publish -&gt; publish:head; publish:proc -&gt; publishCommand;
+
+    //* fix editor highlight
+
+}" />
+</p>
+<hr class="docutils" />
+<p>服务器判断是否需要执行持久化操作的流程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-0ba4963a397efe2b4badfd5a33bbfecc2b9cb00a.png" alt="digraph {
+
+    label = &quot;\n 图 14-9    判断是否需要执行持久化操作&quot;;
+
+    //
+
+    node [shape = box]
+
+    start [label = &quot;服务器没有在执行任何持久化操作&quot;]
+
+    delay_bgrewriteaof_exists_or_not [shape = diamond, label = &quot;有 BGREWRITEAOF 被延迟？&quot;]
+
+    go_bgrewriteaof [label = &quot;执行 BGREWRITEAOF&quot;]
+
+    bgsave_satisfied_or_not [shape = diamond, label = &quot;自动保存的条件已经满足？&quot;]
+
+    go_bgsave [label = &quot;执行 BGSAVE&quot;]
+
+    bgrewriteaof_satisfied_or_not [shape = diamond, label = &quot;AOF 重写的条件已经满足？&quot;]
+
+    go_do_nothing [label = &quot;不做动作&quot;]
+
+    //
+
+    start -&gt; delay_bgrewriteaof_exists_or_not
+
+    delay_bgrewriteaof_exists_or_not -&gt; go_bgrewriteaof [label = &quot;是&quot;]
+
+    delay_bgrewriteaof_exists_or_not -&gt; bgsave_satisfied_or_not [label = &quot;否&quot;]
+
+    bgsave_satisfied_or_not -&gt; go_bgsave [label = &quot;是&quot;]
+
+    bgsave_satisfied_or_not -&gt; bgrewriteaof_satisfied_or_not [label = &quot;否&quot;]
+
+    bgrewriteaof_satisfied_or_not -&gt; go_bgrewriteaof [label = &quot;是&quot;]
+
+    bgrewriteaof_satisfied_or_not -&gt; go_do_nothing [label = &quot;否&quot;]
+
+}" />
+</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="13-client.html"
+                        title="previous chapter">第 13 章： 客户端</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="15-replication.html"
+                        title="next chapter">第 15 章： 复制</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/14-server.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="15-replication.html" title="第 15 章： 复制"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="13-client.html" title="第 13 章： 客户端"
+             >previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, 黄健宏（huangz）.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

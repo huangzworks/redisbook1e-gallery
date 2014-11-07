@@ -1,0 +1,312 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>第 12 章： 事件 &mdash; 《Redis 设计与实现》图片集</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="《Redis 设计与实现》图片集" href="index.html" />
+    <link rel="next" title="第 13 章： 客户端" href="13-client.html" />
+    <link rel="prev" title="第 11 章： AOF 持久化" href="11-aof.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="13-client.html" title="第 13 章： 客户端"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="11-aof.html" title="第 11 章： AOF 持久化"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="id1">
+<h1>第 12 章： 事件<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p>Redis 的文件事件处理器的四个组成部分。</p>
+<p class="graphviz">
+<img src="_images/graphviz-3c09f0e53bd9d786aa646e5e4c289a11d97d40d7.png" alt="digraph {
+
+    label = &quot;\n 图 12-1    文件事件处理器的四个组成部分&quot;;
+
+    rankdir = LR;
+
+    node [shape = box];
+
+    subgraph cluster_sockets {
+
+        style = dashed
+
+        label = &quot;套接字&quot;;
+
+        c1 [label = &quot;s1&quot;, shape = circle];
+        c2 [label = &quot;s2&quot;, shape = circle];
+        other_client [label = &quot;...&quot;, width = 1.1, shape = plaintext];
+        c3 [label = &quot;sN&quot;, shape = circle];
+
+    }
+
+    io_multiplexing [label = &quot;I\n/\nO\n多\n路\n复\n用\n程\n序&quot;];
+
+    file_event_processor [label = &quot;文\n件\n事\n件\n分\n派\n器&quot;];
+
+    subgraph cluster_handlers {
+
+        style = dashed
+
+        label = &quot;事件处理器&quot;;
+
+        write_handler [label = &quot;命令请求处理器&quot;];
+
+        read_handler [label = &quot;命令回复处理器&quot;];
+
+        connect_handler [label = &quot;连接应答处理器&quot;];
+
+        other_handlers [label = &quot;...&quot;, width = 1.6];
+
+    }
+
+    c1 -&gt; io_multiplexing;
+    c2 -&gt; io_multiplexing;
+    other_client -&gt; io_multiplexing [style = invis];
+    c3 -&gt; io_multiplexing;
+
+    io_multiplexing -&gt; file_event_processor;
+
+    file_event_processor -&gt; write_handler;
+    file_event_processor -&gt; read_handler;
+    file_event_processor -&gt; connect_handler;
+    file_event_processor -&gt; other_handlers;
+}" />
+</p>
+<hr class="docutils" />
+<p>I/O 多路复用程序通过队列向文件事件分派器传送套接字的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-a06632048a0970072c8a20c202c9a0efeb07ddb6.png" alt="digraph {
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    label = &quot;\n图 12-2    I/O 多路复用程序通过队列向文件事件分派器传送套接字&quot;;
+
+    //
+
+    subgraph cluster_io_multiplexing {
+
+        //style = dashed
+
+        label = &quot;队列&quot;;
+
+        queue [label = &quot; { 套接字 sN | 套接字 sN-1 | ... | 套接字 s3 | 套接字 s2 } &quot;];
+
+    }
+
+    file_event_processor [label = &quot;文\n件\n事\n件\n分\n派\n器&quot;];
+
+    //
+
+    queue -&gt; file_event_processor [label = &quot;传送\n 套接字 s1&quot;, style = dashed];
+}" />
+</p>
+<hr class="docutils" />
+<p>Redis 的 I/O 多路复用程序有多个 I/O 多路复用库可选。</p>
+<p class="graphviz">
+<img src="_images/graphviz-883af630a14f2796161bbd33a4e7e2824e01d478.png" alt="digraph {
+
+    label = &quot;图 12-3    Redis 的 I/O 多路复用程序有多个 I/O 多路复用库实现可选&quot;;
+
+    node [shape = box];
+
+    io_multiplexing [label = &quot;I/O 多路复用程序&quot;];
+
+    subgraph cluster_imp {
+
+        style = dashed
+
+        label = &quot;底层实现&quot;;
+        labelloc = &quot;b&quot;;
+
+        kqueue [label = &quot;kqueue&quot;];
+        evport [label = &quot;evport&quot;];
+        epoll [label = &quot;epoll&quot;];
+        select [label = &quot;select&quot;];
+    }
+
+    //
+
+    edge [dir = back];
+
+    io_multiplexing -&gt; select;
+    io_multiplexing -&gt; epoll;
+    io_multiplexing -&gt; evport;
+    io_multiplexing -&gt; kqueue;
+
+}" />
+</p>
+<hr class="docutils" />
+<p>客户端与服务器通过事件应答来进行通信的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-e1519871fa7133b28f8dc71b3158814ead169525.png" alt="digraph {
+
+    label = &quot;\n图 12-7    客户端和服务器的通讯过程&quot;;
+
+    splines = polyline;
+
+    rankdir = LR;
+
+    node [shape = box, height = 3.0];
+
+    client [label = &quot;客\n户\n端&quot;];
+
+    server [label = &quot;服\n务\n器&quot;];
+
+    client -&gt; server [label = &quot;客户端向服务器发送连接请求\n服务器执行连接应答处理器&quot;];
+
+    client -&gt; server [label = &quot;\n\n客户端向服务器发送命令请求\n服务器执行命令请求处理器&quot;];
+
+    server -&gt; client [label = &quot;\n\n服务器向客户端发送命令回复\n服务器执行命令回复处理器&quot;];
+
+}" />
+</p>
+<hr class="docutils" />
+<p>时间事件示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-bfc043bd5152a97fabf55da7d12b33512d22b941.png" alt="digraph {
+
+    label = &quot;\n图 12-8    用链表连接起来的三个时间事件&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    time_events [shape = plaintext];
+
+    te3 [label = &quot;time_event | id\n3 | when\n1385877600030\n（2013年12月1日\n零时之后30毫秒） | timeProc\nhandler_3&quot;];
+    te2 [label = &quot;time_event | id\n2 | when\n1385877600000\n（2013年12月1日\n零时） | timeProc\nhandler_2&quot;];
+    te1 [label = &quot;time_event | id\n1 | when\n1385877600010\n（2013年12月1日\n零时之后10毫秒） | timeProc\nhandler_1&quot;];
+
+    time_events -&gt; te3 -&gt; te2 -&gt; te1;
+
+}" />
+</p>
+<hr class="docutils" />
+<p>事件处理角度下的 Redis 服务器运行流程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-03e1d92303e2714abb2f8d719ef1546a9054e8ef.png" alt="digraph {
+
+    label = &quot;\n图 12-10    事件处理角度下的服务器运行流程&quot;;
+
+    start_server [label = &quot;启动服务器&quot;, shape = box];
+
+    server_close_or_not [label = &quot;是否关闭服务器？&quot;, shape = diamond];
+
+    start_server -&gt; server_close_or_not;
+
+    close_server [label = &quot;关闭服务器&quot;, shape = box];
+
+    wait_for_file_event [label = &quot;等待文件事件产生&quot;, shape = box];
+
+    handler_file_event [label = &quot;处理已产生的文件事件&quot;, shape = box];
+
+    handler_time_event [label = &quot;处理已达到的时间事件&quot;, shape = box];
+
+    wait_for_file_event -&gt; handler_file_event -&gt; handler_time_event;
+
+    //
+
+    server_close_or_not -&gt; close_server [label = &quot;是&quot;];
+
+    server_close_or_not -&gt; wait_for_file_event [label = &quot;否&quot;];
+
+    handler_time_event -&gt; server_close_or_not [label = &quot;开始新的事件循环&quot;];
+
+}" />
+</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="11-aof.html"
+                        title="previous chapter">第 11 章： AOF 持久化</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="13-client.html"
+                        title="next chapter">第 13 章： 客户端</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/12-event.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="13-client.html" title="第 13 章： 客户端"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="11-aof.html" title="第 11 章： AOF 持久化"
+             >previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, 黄健宏（huangz）.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

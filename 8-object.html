@@ -1,0 +1,654 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>第 8 章：对象 &mdash; 《Redis 设计与实现》图片集</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="《Redis 设计与实现》图片集" href="index.html" />
+    <link rel="next" title="第 9 章：数据库" href="9-db.html" />
+    <link rel="prev" title="第 7 章：压缩列表" href="7-ziplist.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="9-db.html" title="第 9 章：数据库"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="7-ziplist.html" title="第 7 章：压缩列表"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="id1">
+<h1>第 8 章：对象<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id2">
+<h2>字符串对象<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">int</span></code> 编码的字符串对象</p>
+<p class="graphviz">
+<img src="_images/graphviz-c0ba08ec03934562687cc3cb79580e76edef81e3.png" alt="digraph {
+
+    label = &quot;\n 图 8-1    int 编码的字符串对象&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | type \n REDIS_STRING | encoding \n REDIS_ENCODING_INT | &lt;ptr&gt; ptr | ... &quot;];
+
+    node [shape = plaintext];
+
+    number [label = &quot;10086&quot;]
+
+    redisObject:ptr -&gt; number;
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">raw</span></code> 编码的字符串对象。</p>
+<p class="graphviz">
+<img src="_images/graphviz-8ab5e59accdfa496f966cf90b45b146fb4959335.png" alt="digraph {
+
+    label = &quot;\n 图 8-2    raw 编码的字符串对象&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | type \n REDIS_STRING | encoding \n REDIS_ENCODING_RAW | &lt;ptr&gt; ptr | ... &quot;];
+
+    sdshdr [label = &quot; &lt;head&gt; sdshdr | free \n 0 | len \n 37 | &lt;buf&gt; buf&quot;];
+
+    buf [label = &quot; { 'L' | 'o' | 'n' | 'g' | ... | 'k' | 'i' | 'n' | 'g' | ' ' | '.' | '.' | '.' | '\\0' } &quot; ];
+
+    //
+
+    redisObject:ptr -&gt; sdshdr:head;
+    sdshdr:buf -&gt; buf;
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">embstr</span></code> 编码的字符串对象。</p>
+<p class="graphviz">
+<img src="_images/graphviz-900c13b23ce79372939259603be936c955ccaa62.png" alt="digraph {
+
+    label = &quot;\n 图 8-4    embstr 编码的字符串对象&quot;;
+
+    node [shape = record];
+
+    embstr [ label = &quot; { redisObject | { type \n REDIS_STRING | encoding \n REDIS_ENCODING_EMBSTR | &lt;ptr&gt; ptr | ... } } |  { sdshdr | { free \n 0 | len \n 5 | { buf | { &lt;buf&gt; 'h' | 'e' | 'l' | 'l' | 'o' | '\\0'}} }} &quot; ];
+
+    embstr:ptr -&gt; embstr:buf;
+
+}" />
+</p>
+</div>
+<div class="section" id="id3">
+<h2>列表对象<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">ziplist</span></code> 编码的列表对象。</p>
+<p class="graphviz">
+<img src="_images/graphviz-a8d31075b4c0537f4eb6d84aaba1df928c67c953.png" alt="digraph {
+
+    label = &quot;\n 图 8-5    ziplist 编码的 numbers 列表对象&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | type \n REDIS_LIST | encoding \n REDIS_ENCODING_ZIPLIST | &lt;ptr&gt; ptr | ... &quot;];
+
+    ziplist [label = &quot; { zlbytes | zltail | zllen | 1 | \&quot;three\&quot; | 5 | zlend } &quot;];
+
+    redisObject:ptr -&gt; ziplist;
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">linkedlist</span></code> 编码的列表对象。</p>
+<p class="graphviz">
+<img src="_images/graphviz-84c0d231f30c740a431407c7aaf3851b96399590.png" alt="digraph {
+
+    label = &quot;\n 图 8-6    linkedlist 编码的 numbers 列表对象&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | type \n REDIS_LIST | encoding \n REDIS_ENCODING_LINKEDLIST | &lt;ptr&gt; ptr | ... &quot;];
+
+    subgraph cluster_linked_list {
+
+        label = &quot;链表&quot;;
+
+        style = dashed;
+
+        node1 [label = &quot;StringObject \n 1 &quot;];
+        node2 [label = &quot;StringObject \n \&quot;three\&quot;&quot;];
+        node3 [label = &quot;StringObject \n 5 &quot;];
+
+        node1 -&gt; node2 -&gt; node3;
+
+    }
+
+    redisObject:ptr -&gt; node1;
+
+}" />
+</p>
+</div>
+<div class="section" id="id4">
+<h2>哈希对象<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">ziplist</span></code> 编码的哈希对象。</p>
+<p class="graphviz">
+<img src="_images/graphviz-d2524c9fe90fb5d91b5875107b257e0053794a2a.png" alt="digraph {
+
+    label = &quot;\n 图 8-9    ziplist 编码的 profile 哈希对象&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | type \n REDIS_HASH | encoding \n REDIS_ENCODING_ZIPLIST | &lt;ptr&gt; ptr | ... &quot;];
+
+    ziplist [label = &quot; 压缩列表 &quot;, width = 4.0];
+
+    redisObject:ptr -&gt; ziplist;
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-7ba8b1f3af17e2e62cdf43608914333bf14d8e91.png" alt="digraph {
+
+    label = &quot;\n 图 8-10    profile 哈希对象的压缩列表底层实现&quot;;
+
+    //
+
+    node [shape = record];
+
+    ziplist [label = &quot; zlbytes | zltail | zllen | &lt;key1&gt; \&quot;name\&quot; | &lt;value1&gt; \&quot;Tom\&quot; | &lt;key2&gt; \&quot;age\&quot; | &lt;value2&gt; 25 | &lt;key3&gt; \&quot;career\&quot; | &lt;value3&gt; \&quot;Programmer\&quot; | zlend &quot;];
+
+    node [shape = plaintext];
+
+    edge [style = dashed];
+
+    kv1 [label = &quot;第一个添加的键值对&quot;];
+    kv1 -&gt; ziplist:key1 [label = &quot;键&quot;];
+    kv1 -&gt; ziplist:value1 [label = &quot;值&quot;];
+
+    kv2 [label = &quot;第二个添加的键值对&quot;];
+    kv2 -&gt; ziplist:key2;
+    kv2 -&gt; ziplist:value2;
+
+    kvN [label = &quot;最新添加的键值对&quot;];
+    kvN -&gt; ziplist:key3;
+    kvN -&gt; ziplist:value3;
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">hashtable</span></code> 编码的哈希对象。</p>
+<p class="graphviz">
+<img src="_images/graphviz-68cb863d265a1cd1ccfb038d44ce6b856ebbbe3a.png" alt="digraph {
+
+    label = &quot;\n 图 8-11    hashtable 编码的 profile 哈希对象&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | type \n REDIS_HASH | encoding \n REDIS_ENCODING_HT | &lt;ptr&gt; ptr | ... &quot;];
+
+    dict [label = &quot; &lt;head&gt; dict | &lt;key1&gt; StringObject \n \&quot;age\&quot; | &lt;key2&gt; StringObject \n \&quot;career\&quot; | &lt;key3&gt; StringObject \n \&quot;name\&quot; &quot;, width = 1.5];
+
+    age_value [label = &quot;StringObject \n 25&quot;];
+    career_value [label = &quot;StringObject \n \&quot;Programmer\&quot;&quot;];
+    name_value [label = &quot;StringObject \n \&quot;Tom\&quot;&quot;];
+
+    //
+
+    redisObject:ptr -&gt; dict:head;
+
+    dict:key1 -&gt; age_value;
+    dict:key2 -&gt; career_value;
+    dict:key3 -&gt; name_value;
+
+}" />
+</p>
+</div>
+<div class="section" id="id5">
+<h2>集合对象<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">intset</span></code> 编码的集合对象。</p>
+<p class="graphviz">
+<img src="_images/graphviz-fbd8f0e1aaad0bdef314af55d01212f83cba8b59.png" alt="digraph {
+
+    label = &quot;\n 图 8-12    intset 编码的 numbers 集合对象&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | type \n REDIS_SET | encoding \n REDIS_ENCODING_INTSET | &lt;ptr&gt; ptr | ... &quot;];
+    intset [label = &quot; &lt;head&gt; intset | encoding \n INTSET_ENC_INT16 | length \n 3 | &lt;contents&gt; contents &quot;];
+
+    contents [label = &quot; { 1 | 3 | 5 } &quot;];
+
+    redisObject:ptr -&gt; intset:head;
+    intset:contents -&gt; contents;
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">hashtable</span></code> 编码的集合对象。</p>
+<p class="graphviz">
+<img src="_images/graphviz-3f77c5cca338422f418d6d11bc02109fc945e790.png" alt="digraph {
+
+    label = &quot;\n 图 8-13    hashtable 编码的 fruits 集合对象&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | type \n REDIS_SET | encoding \n REDIS_ENCODING_HT | &lt;ptr&gt; ptr | ... &quot;];
+
+    dict [label = &quot; &lt;head&gt; dict | &lt;cherry&gt; StringObject \n \&quot;cherry\&quot; | &lt;apple&gt; StringObject \n \&quot;apple\&quot; | &lt;banana&gt; StringObject \n \&quot;banana\&quot; &quot;, width = 1.5];
+
+    redisObject:ptr -&gt; dict:head;
+
+    node [shape = plaintext, label = &quot;NULL&quot;];
+
+    dict:apple -&gt; nullX;
+    dict:banana -&gt; nullY;
+    dict:cherry -&gt; nullZ;
+
+}" />
+</p>
+</div>
+<div class="section" id="id6">
+<h2>有序集合对象<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">ziplist</span></code> 编码的有序集合对象。</p>
+<p class="graphviz">
+<img src="_images/graphviz-61b04c9bb72915ec0374125ba9455bc6783db4ff.png" alt="digraph {
+
+    label = &quot;\n 图 8-14    ziplist 编码的有序集合对象&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | type \n REDIS_ZSET | encoding \n REDIS_ENCODING_ZIPLIST | &lt;ptr&gt; ptr | ... &quot;];
+
+    ziplist [label = &quot;压缩列表&quot;, width = 4.0];
+
+    redisObject:ptr -&gt; ziplist;
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-243db42f3ae9ad5bb64108c999f7ce7144f166a6.png" alt="digraph {
+
+    label = &quot;\n 图 8-15    有序集合元素在压缩列表中按分值从小到大排列&quot;;
+
+    //
+
+    node [shape = record];
+
+    ziplist [label = &quot; zlbytes | zltail | zllen | &lt;banana&gt; \&quot;banana\&quot; | &lt;banana_price&gt; 5.0 | &lt;cherry&gt; \&quot;cherry\&quot; | &lt;cherry_price&gt; 6.0 | &lt;apple&gt; \&quot;apple\&quot; | &lt;apple_price&gt; 8.5 | zlend  &quot;];
+
+    node [shape = plaintext];
+
+    banana [label = &quot;分值最少的元素&quot;];
+    cherry [label = &quot;分值排第二的元素&quot;];
+    apple [label = &quot;分值最大的元素&quot;];
+
+    //
+
+    banana -&gt; ziplist:banana [label = &quot;成员&quot;];
+    banana -&gt; ziplist:banana_price [label = &quot;分值&quot;];
+
+    cherry -&gt; ziplist:cherry;
+    cherry -&gt; ziplist:cherry_price;
+
+    apple -&gt; ziplist:apple;
+    apple -&gt; ziplist:apple_price;
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">skiplist</span></code> 编码的有序集合对象。</p>
+<p class="graphviz">
+<img src="_images/graphviz-122e7ebdcd23e888fae17c21813be048c2d3f0a8.png" alt="digraph {
+
+    label = &quot;\n 图 8-16    skiplist 编码的有序集合对象&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    redisObject [label = &quot; redisObject | type \n REDIS_ZSET | encoding \n REDIS_ENCODING_SKIPLIST | &lt;ptr&gt; ptr | ... &quot;];
+
+    zset [label = &quot; &lt;head&gt; zset | &lt;dict&gt; dict | &lt;zsl&gt; zsl &quot;];
+
+    node [shape = plaintext];
+
+    dict [label = &quot;...&quot;];
+
+    zsl [label = &quot;...&quot;];
+
+    redisObject:ptr -&gt; zset:head;
+    zset:dict -&gt; dict;
+    zset:zsl -&gt; zsl;
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-75ee561bcc63f8ea960d0339768aec97b1f570f0.png" alt="digraph {
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    zset [label = &quot; &lt;head&gt; zset | &lt;dict&gt; dict | &lt;zsl&gt; zsl &quot;];
+
+    dict [label = &quot; &lt;head&gt; dict | ... | &lt;ht0&gt; ht[0] | ... &quot;];
+
+    ht0 [label = &quot; &lt;head&gt; dictht | ... | &lt;table&gt; table | ... &quot;];
+
+    table [label = &quot; &lt;banana&gt; StringObject \n \&quot;banana\&quot; | &lt;apple&gt; StringObject \n \&quot;apple\&quot; | &lt;cherry&gt; StringObject \n \&quot;cherry\&quot; &quot;];
+
+    node [shape = plaintext];
+
+    apple_price [label = &quot;8.5&quot;];
+    banana_price [label = &quot;5.0&quot;];
+    cherry_price [label = &quot;6.0&quot;];
+
+    //
+
+    zset:dict -&gt; dict:head;
+    dict:ht0 -&gt; ht0:head;
+    ht0:table -&gt; table:head;
+
+    table:apple -&gt; apple_price;
+    table:banana -&gt; banana_price;
+    table:cherry -&gt; cherry_price;
+
+    //
+
+    node [shape = record, width = &quot;0.5&quot;];
+
+    //
+
+    l [label = &quot; &lt;header&gt; header | &lt;tail&gt; tail | level \n 5 | length \n 3 &quot;];
+
+    subgraph cluster_nodes {
+
+        style = invisible;
+
+        header [label = &quot; &lt;l32&gt; L32 | ... | &lt;l5&gt; L5 | &lt;l4&gt; L4 | &lt;l3&gt; L3 | &lt;l2&gt; L2 | &lt;l1&gt; L1 &quot;];
+
+        bw_null [label = &quot;NULL&quot;, shape = plaintext];
+
+        level_null [label = &quot;NULL&quot;, shape = plaintext];
+
+        A [label = &quot; &lt;l4&gt; L4 | &lt;l3&gt; L3 | &lt;l2&gt; L2 | &lt;l1&gt; L1 | &lt;backward&gt; BW | 5.0 | StringObject \n \&quot;banana\&quot; &quot;];
+
+        B [label = &quot; &lt;l2&gt; L2 | &lt;l1&gt; L1 | &lt;backward&gt; BW | 6.0 | StringObject \n \&quot;cherry\&quot; &quot;];
+
+        C [label = &quot; &lt;l5&gt; L5 | &lt;l4&gt; L4 | &lt;l3&gt; L3 | &lt;l2&gt; L2 | &lt;l1&gt; L1 | &lt;backward&gt; BW | 8.5 | StringObject \n \&quot;apple\&quot; &quot;];
+
+    }
+
+    subgraph cluster_nulls {
+
+        style = invisible;
+
+        n1 [label = &quot;NULL&quot;, shape = plaintext];
+        n2 [label = &quot;NULL&quot;, shape = plaintext];
+        n3 [label = &quot;NULL&quot;, shape = plaintext];
+        n4 [label = &quot;NULL&quot;, shape = plaintext];
+        n5 [label = &quot;NULL&quot;, shape = plaintext];
+
+    }
+
+    //
+
+    l:header -&gt; header;
+    l:tail -&gt; C;
+
+    header:l32 -&gt; level_null;
+    header:l5 -&gt; C:l5;
+    header:l4 -&gt; A:l4;
+    header:l3 -&gt; A:l3;
+    header:l2 -&gt; A:l2;
+    header:l1 -&gt; A:l1;
+
+    A:l4 -&gt; C:l4;
+    A:l3 -&gt; C:l3;
+    A:l2 -&gt; B:l2;
+    A:l1 -&gt; B:l1;
+
+    B:l2 -&gt; C:l2;
+    B:l1 -&gt; C:l1;
+
+    C:l5 -&gt; n5;
+    C:l4 -&gt; n4;
+    C:l3 -&gt; n3;
+    C:l2 -&gt; n2;
+    C:l1 -&gt; n1;
+
+    bw_null -&gt; A:backward -&gt; B:backward -&gt; C:backward [dir = back];
+
+    zset:zsl -&gt; l:header;
+
+    // HACK: 放在开头的话 NULL 指针的长度会有异样
+    label = &quot;\n 图 8-17    有序集合元素同时被保存在字典和跳跃表中&quot;;
+
+}" />
+</p>
+</div>
+<div class="section" id="id7">
+<h2>类型检查与命令多态<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">LLEN</span></code> 命令执行时的类型检查过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-bb97ad72ffdd0886759fb83ac6276ab832ba9193.png" alt="digraph {
+
+    label = &quot;\n 图 8-18    LLEN 命令执行时的类型检查过程&quot;;
+
+    //
+
+    call_command [label = &quot;客户端发送 LLEN &lt;key&gt; 命令&quot;, shape = box];
+
+    check_type [label = &quot;服务器检查 \n 键 key 的值对象\n是否列表对象&quot;, shape = diamond];
+
+    execute_command [label = &quot;对键 key 执行 LLEN 命令&quot;, shape = box];
+
+    type_error [label = &quot;返回一个类型错误&quot;, shape = box];
+
+    //
+
+    call_command -&gt; check_type;
+
+    check_type -&gt; execute_command [label = &quot;是&quot;];
+
+    check_type -&gt; type_error [label = &quot;否&quot;];
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">LLEN</span></code> 命令的多态行为。</p>
+<p class="graphviz">
+<img src="_images/graphviz-6968058778bf21d6e975a903e47b232c72fdadd1.png" alt="digraph {
+
+    label = &quot;\n 图 8-19    LLEN 命令的执行过程&quot;;
+
+    //
+
+    node [shape = box];
+
+    call_command [label = &quot;客户端发送 LLEN &lt;key&gt; 命令&quot;];
+
+    check_type [label = &quot;服务器检查 \n 键 key 的值对象\n是否列表对象&quot;, shape = diamond];
+
+    //execute_command [label = &quot;对键 key 执行 LLEN 命令&quot;];
+
+    select_encoding [label = &quot;对象的编码是 \n ziplist 还是 linkedlist ？&quot;, shape = diamond];
+
+    ziplist [label = &quot;调用 ziplistLen 函数 \n 返回压缩列表的长度&quot;];
+
+    linkedlist [label = &quot;调用 listLength 函数 \n 返回双端链表的长度&quot;];
+
+    type_error [label = &quot;返回一个类型错误&quot;];
+
+    //
+
+    call_command -&gt; check_type;
+
+    //check_type -&gt; execute_command [label = &quot;是&quot;];
+
+    check_type -&gt; type_error [label = &quot;否&quot;];
+
+    //execute_command -&gt; select_encoding;
+
+    check_type -&gt; select_encoding [label = &quot;是&quot;];
+
+    select_encoding -&gt; ziplist [label = &quot;ziplist \n 编码&quot;];
+
+    select_encoding -&gt; linkedlist [label = &quot;linkedlist \n 编码&quot;];
+
+}" />
+</p>
+</div>
+<div class="section" id="id8">
+<h2>对象共享<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h2>
+<p>对象共享的示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-b67a99e375084b9847331a258fb5a98373562122.png" alt="digraph {
+
+    label = &quot;\n 图 8-23    引用数为 3 的共享对象&quot;;
+
+    rankdir = LR;
+
+    server [label = &quot;服务器程序&quot;, shape = box, width = 1.5];
+    key_a [label = &quot;键 A&quot;, shape = box, width = 1.5];
+    key_b [label = &quot;键 B&quot;, shape = box, width = 1.5];
+
+    redisObject [label = &quot; &lt;head&gt; redisObject | type \n REDIS_STRING | encoding \n REDIS_ENCODING_INT | &lt;ptr&gt; ptr | refcount \n 3 | ... &quot;, shape = record];
+
+    node [shape = plaintext];
+
+    number [label = &quot;100&quot;]
+
+    redisObject:ptr -&gt; number;
+
+    key_a -&gt; redisObject:head;
+    key_b -&gt; redisObject:head;
+    server -&gt; redisObject:head;
+
+}" />
+</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">第 8 章：对象</a><ul>
+<li><a class="reference internal" href="#id2">字符串对象</a></li>
+<li><a class="reference internal" href="#id3">列表对象</a></li>
+<li><a class="reference internal" href="#id4">哈希对象</a></li>
+<li><a class="reference internal" href="#id5">集合对象</a></li>
+<li><a class="reference internal" href="#id6">有序集合对象</a></li>
+<li><a class="reference internal" href="#id7">类型检查与命令多态</a></li>
+<li><a class="reference internal" href="#id8">对象共享</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="7-ziplist.html"
+                        title="previous chapter">第 7 章：压缩列表</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="9-db.html"
+                        title="next chapter">第 9 章：数据库</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/8-object.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="9-db.html" title="第 9 章：数据库"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="7-ziplist.html" title="第 7 章：压缩列表"
+             >previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, 黄健宏（huangz）.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

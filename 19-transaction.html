@@ -1,0 +1,269 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>第 19 章： 事务 &mdash; 《Redis 设计与实现》图片集</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="《Redis 设计与实现》图片集" href="index.html" />
+    <link rel="next" title="第 20 章： Lua 脚本" href="20-lua.html" />
+    <link rel="prev" title="第 18 章： 发布与订阅" href="18-pubsub.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="20-lua.html" title="第 20 章： Lua 脚本"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="18-pubsub.html" title="第 18 章： 发布与订阅"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="id1">
+<h1>第 19 章： 事务<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p>在一个事务开始之后，
+服务器判断命令是该入队还是该执行的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-80409479fc5a22a90d467a2f7c356ff3de00d6f7.png" alt="digraph enque_or_execute {
+
+    label = &quot;\n图 19-1    服务器判断命令是该入队还是该执行的过程&quot;;
+
+    node [shape = box];
+
+    //
+
+    command_in [label = &quot;服务器接到来自客户端的命令&quot;];
+
+    in_transaction_or_not [label = &quot;这个客户端正处于事务状态？&quot;, shape = diamond];
+
+    not_exec_and_discard [label = &quot;这个命令是否\nEXEC 、 DISCARD 、\nWATCH 或 MULTI ？&quot;, shape = diamond];
+
+    enqueu_command [label = &quot;将命令放入事务队列&quot;];
+
+    return_enqueued [label = &quot;向客户端返回 QUEUED&quot;];
+
+    exec_command [label = &quot;执行这个命令&quot;];
+
+    return_command_result [label = &quot;向客户端返回命令的执行结果&quot;];
+
+    //
+
+    command_in -&gt; in_transaction_or_not;
+
+    in_transaction_or_not -&gt; not_exec_and_discard [label = &quot;是&quot;];
+
+    not_exec_and_discard -&gt; enqueu_command [label = &quot;否&quot;];
+
+    not_exec_and_discard -&gt; exec_command [label = &quot;是&quot;];
+
+    in_transaction_or_not -&gt; exec_command [label = &quot;否&quot;];
+
+    exec_command -&gt; return_command_result;
+
+    enqueu_command -&gt; return_enqueued;
+}" />
+</p>
+<hr class="docutils" />
+<p>事务状态。</p>
+<p class="graphviz">
+<img src="_images/graphviz-0bdfab80796f3926377ca2512b422dc3361bd74a.png" alt="digraph {
+
+    label = &quot;\n 图 19-2    事务状态&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    //redisClient [label = &quot; &lt;head&gt; redisClient | ... | &lt;mstate&gt; mstate | ... &quot;];
+
+    multiState [label = &quot; &lt;head&gt; multiState | &lt;commands&gt; commands | count \n 4 &quot;];
+
+    commands [label = &quot; &lt;head&gt; multiCmd[4] | &lt;0&gt; [0] | &lt;1&gt; [1] | &lt;2&gt; [2] | &lt;3&gt; [3] &quot;];
+
+    multiCmd0 [label = &quot; &lt;head&gt; multiCmd | &lt;argv&gt; argv | argc \n 3 | &lt;cmd&gt; cmd &quot;];
+
+    multiCmd1 [label = &quot; &lt;head&gt; multiCmd | &lt;argv&gt; argv | argc \n 2 | &lt;cmd&gt; cmd &quot;];
+
+    multiCmd2 [label = &quot; &lt;head&gt; multiCmd | &lt;argv&gt; argv | argc \n 3 | &lt;cmd&gt; cmd &quot;];
+
+    multiCmd3 [label = &quot; &lt;head&gt; multiCmd | &lt;argv&gt; argv | argc \n 2 | &lt;cmd&gt; cmd &quot;];
+
+    //redisClient:mstate -&gt; multiState:head;
+
+    multiState:commands -&gt; commands:head;
+
+    commands:0 -&gt; multiCmd0:head;
+    commands:1 -&gt; multiCmd1:head;
+    commands:2 -&gt; multiCmd2:head;
+    commands:3 -&gt; multiCmd3:head;
+
+    argv0 [label = &quot; robj*[3] | { StringObject \n \&quot;SET\&quot; | StringObject \n \&quot;name\&quot; | StringObject \n \&quot;Practical Common Lisp\&quot; } &quot;];
+    cmd0 [label = &quot; setCommand &quot;, shape = plaintext];
+
+    multiCmd0:argv -&gt; argv0;
+    multiCmd0:cmd -&gt; cmd0;
+
+    argv1 [label = &quot; robj*[2] | { StringObject \n \&quot;GET\&quot; | StringObject \n \&quot;name\&quot; } &quot;];
+    cmd1 [label = &quot; getCommand &quot;, shape = plaintext];
+
+    multiCmd1:argv -&gt; argv1;
+    multiCmd1:cmd -&gt; cmd1;
+
+    argv2 [label = &quot; robj*[3] | { StringObject \n \&quot;SET\&quot; | StringObject \n \&quot;author\&quot; | StringObject \n \&quot;Peter Seibel\&quot; } &quot;];
+    cmd2 [label = &quot; setCommand &quot;, shape = plaintext];
+
+    multiCmd2:argv -&gt; argv2;
+    multiCmd2:cmd -&gt; cmd2;
+
+    argv3 [label = &quot; robj*[2] | { StringObject \n \&quot;GET\&quot; | StringObject \n \&quot;author\&quot; } &quot;];
+    cmd3 [label = &quot; getCommand &quot;, shape = plaintext];
+
+    multiCmd3:argv -&gt; argv3;
+    multiCmd3:cmd -&gt; cmd3;
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">watched_keys</span></code> 字典示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-49e3cee37873c14e9a7d2d4d9071a668d2aa2cd5.png" alt="digraph {
+
+    label = &quot;\n 图 19-5    watched_keys 字典&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    //
+
+    watched_keys [label = &quot;watched_keys | &lt;name&gt; \&quot;name\&quot; | &lt;age&gt; \&quot;age\&quot; | &lt;address&gt; \&quot;address\&quot; &quot;, width = 2.0, height = 3.0];
+
+    //
+
+    name_c2 [label = &quot;c2&quot;];
+    address_c2 [label = &quot;c2&quot;];
+    name_c10086 [label = &quot;c10086&quot;];
+    age_c10086 [label = &quot;c10086&quot;];
+
+    //
+
+    watched_keys:name -&gt; c1 -&gt; name_c2 -&gt; name_c10086;
+    watched_keys:age -&gt; c3 -&gt; age_c10086;
+    watched_keys:address -&gt; address_c2 -&gt; c4;
+
+}" />
+</p>
+<hr class="docutils" />
+<p>服务器判断是否执行事务的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-e0fa81234c07f8bbce33fcbeb51c630667a58e62.png" alt="digraph {
+
+    label = &quot;\n 图 19-6    服务器判断是否执行事务的过程&quot;;
+
+    node [shape = box];
+
+    exec [label = &quot;客户端向服务器发送 EXEC 命令&quot;];
+
+    dirty_cas_or_not [label = &quot;客户端的 \n REDIS_DIRTY_CAS \n 标识是否已经打开？&quot;, shape = diamond];
+
+    reject [label = &quot;拒绝执行客户端提交的事务&quot;];
+
+    ok [label = &quot;执行客户端提交的事务&quot;];
+
+    exec -&gt; dirty_cas_or_not;
+
+    dirty_cas_or_not -&gt; reject [label = &quot;是&quot;];
+
+    dirty_cas_or_not -&gt; ok [label = &quot;否&quot;];
+
+}" />
+</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="18-pubsub.html"
+                        title="previous chapter">第 18 章： 发布与订阅</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="20-lua.html"
+                        title="next chapter">第 20 章： Lua 脚本</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/19-transaction.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="20-lua.html" title="第 20 章： Lua 脚本"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="18-pubsub.html" title="第 18 章： 发布与订阅"
+             >previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, 黄健宏（huangz）.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

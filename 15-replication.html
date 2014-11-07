@@ -1,0 +1,546 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>第 15 章： 复制 &mdash; 《Redis 设计与实现》图片集</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="《Redis 设计与实现》图片集" href="index.html" />
+    <link rel="next" title="第 16 章： Sentinel" href="16-sentinel.html" />
+    <link rel="prev" title="第 14 章： 服务器" href="14-server.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="16-sentinel.html" title="第 16 章： Sentinel"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="14-server.html" title="第 14 章： 服务器"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="id1">
+<h1>第 15 章： 复制<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal"><span class="pre">SYNC</span></code> 命令执行期间，
+主从服务器的通信过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-97b9636a1ae5296d0dd59743f533ed887b80779a.png" alt="digraph {
+
+    label = &quot;\n 图 15-2    主从服务器在执行 SYNC 命令期间的通信过程&quot;
+
+    rankdir = LR
+
+    splines = polyline
+
+    node [shape = box, height = 2]
+
+    master [label = &quot;主\n服\n务\n器&quot;]
+
+    slave [label = &quot;从\n服\n务\n器&quot;]
+
+    master -&gt; slave [dir = back,  label = &quot;发送 SYNC 命令&quot;]
+
+    master -&gt; slave [label = &quot;\n 发送 RDB 文件&quot;]
+
+    master -&gt; slave [label = &quot;\n 发送缓冲区保存的所有写命令&quot;]
+
+}" />
+</p>
+<hr class="docutils" />
+<p>Redis 的命令传播过程示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-6815c2f60e501d13235281426dd7b35eb6cec98b.png" alt="digraph {
+
+    label = &quot;\n 图 15-3    处于一致状态的主从服务器&quot;
+
+    rankdir = LR
+
+    node [shape = record, width = 2]
+
+    subgraph cluster_master {
+
+        label = &quot;主服务器&quot;
+
+        master_db [label = &quot; &lt;head&gt; 数据库 | &lt;k1&gt; k1 | &lt;k2&gt; k2 | &lt;k3&gt; k3 | &lt;k4&gt; k4 | &lt;k5&gt; k5 &quot;];
+
+    }
+
+
+    subgraph cluster_slave {
+
+        label = &quot;从服务器&quot;
+
+        slave_db [label = &quot; &lt;head&gt; 数据库 | &lt;k1&gt; k1 | &lt;k2&gt; k2 | &lt;k3&gt; k3 | &lt;k4&gt; k4 | &lt;k5&gt; k5 &quot;];
+
+    }
+
+    master_db -&gt; slave_db [style = invis]
+}" />
+</p>
+<p>如果这时，
+客户端向主服务器发送命令 <code class="docutils literal"><span class="pre">DEL</span> <span class="pre">k3</span></code> ，
+那么主服务器在执行完这个 <em class="xref std std-ref">DEL</em> 命令之后，
+主从服务器的数据库将出现不一致：
+主服务器的数据库已经不再包含键 <code class="docutils literal"><span class="pre">k3</span></code> ，
+但这个键却仍然包含在从服务器的数据库里面，
+如图 15-4 所示。</p>
+<p class="graphviz">
+<img src="_images/graphviz-c762b83299748735aa6e348e52c1a709d0b15736.png" alt="digraph {
+
+    label = &quot;\n 图 15-4    处于不一致状态的主从服务器&quot;
+
+    rankdir = LR
+
+    node [shape = circle]
+
+    client [label = &quot;客户端&quot;]
+
+    node [shape = record, width = 2]
+
+    subgraph cluster_master {
+
+        label = &quot;主服务器&quot;
+
+        master_db [label = &quot; &lt;head&gt; 数据库 | &lt;k1&gt; k1 | &lt;k2&gt; k2 | &lt;k4&gt; k4 | &lt;k5&gt; k5 &quot;];
+
+    }
+
+
+    subgraph cluster_slave {
+
+        label = &quot;从服务器&quot;
+
+        slave_db [label = &quot; &lt;head&gt; 数据库 | &lt;k1&gt; k1 | &lt;k2&gt; k2 | &lt;k3&gt; k3 | &lt;k4&gt; k4 | &lt;k5&gt; k5 &quot;];
+
+    }
+
+    master_db -&gt; slave_db [style = invis]
+
+    client -&gt; master_db [label = &quot;发送命令 \n DEL k3&quot;]
+}" />
+</p>
+<p>在上面的例子中，
+主服务器因为执行了命令 <code class="docutils literal"><span class="pre">DEL</span> <span class="pre">k3</span></code> 而导致主从服务器不一致，
+所以主服务器将向从服务器发送相同的命令 <code class="docutils literal"><span class="pre">DEL</span> <span class="pre">k3</span></code> ：
+当从服务器执行完这个命令之后，
+主从服务器将再次回到一致状态 ——
+现在主从服务器两者的数据库都不再包含键 <code class="docutils literal"><span class="pre">k3</span></code> 了，
+如图 15-5 所示。</p>
+<p class="graphviz">
+<img src="_images/graphviz-87095964cd00b831c44b014be834272de718d1a6.png" alt="digraph {
+
+    label = &quot;\n 图 15-5    主服务器向从服务器发送命令&quot;
+
+    rankdir = LR
+
+    node [shape = record, width = 2]
+
+    subgraph cluster_master {
+
+        label = &quot;主服务器&quot;
+
+        master_db [label = &quot; &lt;head&gt; 数据库 | &lt;k1&gt; k1 | &lt;k2&gt; k2 | &lt;k4&gt; k4 | &lt;k5&gt; k5 &quot;];
+
+    }
+
+    subgraph cluster_slave {
+
+        label = &quot;从服务器&quot;
+
+        slave_db [label = &quot; &lt;head&gt; 数据库 | &lt;k1&gt; k1 | &lt;k2&gt; k2 | &lt;k4&gt; k4 | &lt;k5&gt; k5 &quot;];
+
+    }
+
+    master_db -&gt; slave_db [label = &quot;发送命令 \n DEL k3&quot;]
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">PSYNC</span></code> 命令执行部分重同步时的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-ea4df5d3f002721c72f35eeecb24d56e43461c6e.png" alt="digraph {
+
+    rankdir = LR;
+
+    node [shape = record, height = 2];
+
+    splines = polyline;
+
+    master [label = &quot;主\n服\n务\n器&quot;];
+
+    slave [label = &quot;从\n服\n务\n器&quot;];
+
+    master -&gt; slave [dir = back, label = &quot;PSYNC&quot;];
+
+    master -&gt; slave [label = &quot;\n+CONTINUE&quot;];
+
+    master -&gt; slave [label = &quot;\n发送主从服务器断线期间\n主服务器执行的写命令&quot;];
+
+    label = &quot;\n图 15-6    主从服务器执行部分重同步的过程&quot;;
+
+}" />
+</p>
+<hr class="docutils" />
+<p>Redis 的复制积压缓冲区的结构图。</p>
+<p class="graphviz">
+<img src="_images/graphviz-cda61ff7c43e48f7d440a29dca24e7a4c18c6889.png" alt="digraph {
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    subgraph cluster_master {
+
+        label = &quot;主服务器&quot;;
+
+        propagater [label = &quot;命令传播程序&quot;, height = 3.0];
+
+        backlog [label = &quot;复制积压缓冲区&quot;];
+        propagater -&gt; backlog [label = &quot;将写命令放入队列&quot;];
+
+
+    }
+
+    node [height = 1.0];
+
+    subgraph cluster_slaves {
+
+
+        slave1 [label = &quot;从服务器 A&quot;];
+
+        slave2 [label = &quot;从服务器 B&quot;];
+
+        slave3 [label = &quot;从服务器 C&quot;];
+
+        style = invis;
+
+    }
+
+    edge [label = &quot;发送写命令&quot;]
+
+    backlog -&gt; slave1 [style = invis];
+    propagater -&gt; slave1;
+    propagater -&gt; slave2;
+    propagater -&gt; slave3;
+
+    label = &quot;\n图 15-10    主服务器向复制积压缓冲区和所有从服务器传播写命令数据&quot;;
+}" />
+</p>
+<hr class="docutils" />
+<p>Redis 使用复制积压缓冲区来为断线的从服务器发送缺失数据的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-aa14465928963c3294df099f849dee43be08be6a.png" alt="digraph {
+
+    rankdir = LR;
+
+    node [shape = box, height = 1.0];
+
+    //
+
+    master [label = &quot;主服务器\n\noffset = 10086&quot;];
+
+    slave1 [label = &quot;从服务器 A\n\noffset = 10086&quot;];
+
+    slave2 [label = &quot;从服务器 B\n\noffset = 10086&quot;];
+
+    slave3 [label = &quot;从服务器 C\n\noffset = 10086&quot;];
+
+    //
+
+    edge [style = invis];
+
+    master -&gt; slave1;
+    master -&gt; slave2;
+    master -&gt; slave3;
+
+    label = &quot;\n图 15-7    拥有相同偏移量的主服务器和它的三个从服务器&quot;;
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-21e515c3ed10e0d7a4b2e5e226a8a5ae0e7e899f.png" alt="digraph {
+
+    rankdir = LR;
+
+    node [shape = box, height = 1.0];
+
+    //
+
+    master [label = &quot;主服务器\n\noffset = 10119&quot;];
+
+    slave1 [label = &quot;从服务器 A\n\noffset = 10119&quot;];
+
+    slave2 [label = &quot;从服务器 B\n\noffset = 10119&quot;];
+
+    slave3 [label = &quot;从服务器 C\n\noffset = 10119&quot;];
+
+    //
+
+    edge [label = &quot;传播 33 字节数据&quot;];
+
+    master -&gt; slave1;
+    master -&gt; slave2;
+    master -&gt; slave3;
+
+    label = &quot;\n图 15-8    更新偏移量之后的主从服务器&quot;;
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-006edcd29b6f3ed0c9618ffdb28ebae5c047bd2f.png" alt="digraph {
+
+    rankdir = LR;
+
+    node [shape = box, height = 1.0];
+
+    //
+
+    master [label = &quot;主服务器\n\noffset = 10119&quot;];
+
+    slave1 [label = &quot;从服务器 A\n\noffset = 10086&quot;];
+
+    slave2 [label = &quot;从服务器 B\n\noffset = 10119&quot;];
+
+    slave3 [label = &quot;从服务器 C\n\noffset = 10119&quot;];
+
+    //
+
+    edge [label = &quot;传播 33 字节数据&quot;];
+
+    master -&gt; slave1 [style = dotted, dir = none, label = &quot;（断线）&quot;];
+    master -&gt; slave2;
+    master -&gt; slave3;
+
+    label = &quot;\n图 15-9    因为断线而处于不一致状态的从服务器 A&quot;;
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-f6bc4ff370b34ed8a308808cd8ad35cefa719dca.png" alt="digraph {
+
+    rankdir = LR;
+
+    node [shape = box, height = 1.0];
+
+    //
+
+    master [label = &quot;主服务器\n\noffset = 10119&quot;];
+
+    slave1 [label = &quot;从服务器 A\n\noffset = 10119&quot;];
+
+    slave2 [label = &quot;从服务器 B\n\noffset = 10119&quot;];
+
+    slave3 [label = &quot;从服务器 C\n\noffset = 10119&quot;];
+
+    //
+
+    master -&gt; slave1 [label = &quot;发送断线时缺失的\n 33 字节数据&quot;];
+    master -&gt; slave2 [style = invis, dir = none];
+    master -&gt; slave3 [style = invis, dir = none];
+
+    label = &quot;\n图 15-11    主服务器向从服务器发送缺失的数据&quot;;
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">PSYNC</span></code> 命令判断是执行部分重同步还是完整重同步的流程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-05c9723c0862aecf99485314d7de36c440686539.png" alt="digraph {
+
+    node [shape = box];
+
+    data_sync [label = &quot;从服务器接到客户端发来的 SLAVEOF 命令&quot;];
+
+    have_cache_or_not [label = &quot;这是从服务器第一次执行复制？&quot;, shape = diamond];
+
+    data_sync -&gt; have_cache_or_not;
+
+    force_full_resync [label = &quot;向主服务器发送\nPSYNC ? -1&quot;];
+
+    try_partial_resync [label = &quot;向主服务器发送\nPSYNC &lt;runid&gt; &lt;offset&gt;&quot;];
+
+    have_cache_or_not -&gt; force_full_resync [label = &quot;是&quot;];
+
+    have_cache_or_not -&gt; try_partial_resync [label = &quot;否&quot;];
+
+    full_resync [label = &quot;主服务器返回\n+FULLRESYNC &lt;runid&gt; &lt;offset&gt;\n执行完整重同步&quot;];
+
+    force_full_resync -&gt; full_resync;
+
+    master_return_continue_or_not [label = &quot;主服务器返回 +CONTINUE ？&quot;, shape = diamond];
+
+    try_partial_resync -&gt; master_return_continue_or_not;
+
+    master_return_continue_or_not -&gt; full_resync [label = &quot;否&quot;];
+
+    partial_resync [label = &quot;执行部分重同步&quot;];
+
+    master_return_continue_or_not -&gt; partial_resync [label = &quot;是&quot;];
+
+    label = &quot;\n图 15-12    PSYNC 执行完整重同步和部分重同步时可能遇上的情况&quot;;
+
+}" />
+</p>
+<hr class="docutils" />
+<p>Redis 服务器监测命令缺失，并补发缺失命令的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-62d73bb577babc9671f8e306c0ddd10e1c3c84de.png" alt="digraph {
+
+    label = &quot;\n 图 15-23    主从服务器处于一致状态&quot;
+
+    rankdir = LR;
+
+    node [shape = box, height = 2]
+
+    master [label = &quot;主服务器\n复制偏移量为 200&quot;]
+
+    slave [label = &quot;从服务器\n复制偏移量为 200&quot;]
+
+    master -&gt; slave [style = invis]
+
+}" />
+</p>
+<p>如果这时主服务器执行了命令 <code class="docutils literal"><span class="pre">SET</span> <span class="pre">key</span> <span class="pre">value</span></code> （协议格式的长度为 <code class="docutils literal"><span class="pre">33</span></code> 字节），
+将自己的复制偏移量更新到了 <code class="docutils literal"><span class="pre">233</span></code> ，
+并尝试向从服务器传播命令 <code class="docutils literal"><span class="pre">SET</span> <span class="pre">key</span> <span class="pre">value</span></code> ，
+但这条命令却因为网络故障而在传播的途中丢失，
+那么主从服务器之间的复制偏移量就会出现不一致：
+主服务器的复制偏移量会被更新为 <code class="docutils literal"><span class="pre">233</span></code> ，
+而从服务器的复制偏移量仍然为 <code class="docutils literal"><span class="pre">200</span></code> ，
+如图 15-24 所示。</p>
+<p class="graphviz">
+<img src="_images/graphviz-f4772113dab802b5a71caf98031aad7286fd1acf.png" alt="digraph {
+
+    label = &quot;\n 图 15-24    主从服务器处于不一致状态&quot;
+
+    rankdir = LR;
+
+    node [shape = box]
+
+    master [label = &quot;主服务器\n复制偏移量为 233&quot;, height = 2]
+
+    stop [shape = point]
+
+    slave [label = &quot;从服务器\n复制偏移量为 200&quot;, height = 2]
+
+    master -&gt; stop [label = &quot;SET key value&quot;, style = dashed]
+
+    stop -&gt; slave [style = invis]
+
+}" />
+</p>
+<p>在这之后，
+当从服务器向主服务器发送 <em class="xref std std-ref">REPLCONF ACK</em> 命令的时候，
+主服务器会察觉从服务器的复制偏移量依然为 <code class="docutils literal"><span class="pre">200</span></code> ，
+而自己的复制偏移量为 <code class="docutils literal"><span class="pre">233</span></code> ，
+这说明复制积压缓冲区里面复制偏移量为 <code class="docutils literal"><span class="pre">201</span></code> 至 <code class="docutils literal"><span class="pre">233</span></code> 的数据（也即是命令 <code class="docutils literal"><span class="pre">SET</span> <span class="pre">key</span> <span class="pre">value</span></code> ）在传播过程中丢失了，
+于是主服务器会再次向从服务器传播命令 <code class="docutils literal"><span class="pre">SET</span> <span class="pre">key</span> <span class="pre">value</span></code> ，
+从服务器通过接收并执行这个命令可以将自己更新至主服务器当前所处的状态，
+如图 15-25 所示。</p>
+<p class="graphviz">
+<img src="_images/graphviz-f917c687bc15708bcbb0da53f98ca9fe94739471.png" alt="digraph {
+
+    label = &quot;\n 图 15-25    主服务器向从服务器补发缺失的数据&quot;
+
+    rankdir = LR
+
+    splines = polyline
+
+    node [shape = box, height = 2]
+
+    master [label = &quot;主服务器\n复制偏移量为 233&quot;]
+
+    slave [label = &quot;从服务器\n复制偏移量为 233&quot;]
+
+    master -&gt; slave [dir = back, label = &quot;REPLCONF ACK 200&quot;]
+
+    master -&gt; slave [label = &quot;\nSET key value&quot;]
+
+}" />
+</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="14-server.html"
+                        title="previous chapter">第 14 章： 服务器</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="16-sentinel.html"
+                        title="next chapter">第 16 章： Sentinel</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/15-replication.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="16-sentinel.html" title="第 16 章： Sentinel"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="14-server.html" title="第 14 章： 服务器"
+             >previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, 黄健宏（huangz）.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>

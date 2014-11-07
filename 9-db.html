@@ -1,0 +1,439 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>第 9 章：数据库 &mdash; 《Redis 设计与实现》图片集</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="《Redis 设计与实现》图片集" href="index.html" />
+    <link rel="next" title="第 10 章：RDB 持久化" href="10-rdb.html" />
+    <link rel="prev" title="第 8 章：对象" href="8-object.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="10-rdb.html" title="第 10 章：RDB 持久化"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="8-object.html" title="第 8 章：对象"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="id1">
+<h1>第 9 章：数据库<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p>数据库示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-6d5a23554720addffde00d34f9f6212498203291.png" alt="digraph {
+
+    label = &quot;\n 图 9-1    服务器数据库示例&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    //
+
+    redisServer [label = &quot;redisServer | ... | &lt;db&gt; db | ... | dbnum \n 16 | ...&quot;];
+
+    db [label = &quot;{ &lt;0&gt; db[0] | &lt;1&gt; db[1] | &lt;2&gt; db[2] | ... | &lt;15&gt; db[15] }&quot;];
+
+    //
+
+    redisServer:db -&gt; db;
+
+}" />
+</p>
+<hr class="docutils" />
+<p>数据库键空间示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-b1bea528da9b180dc035546f23f8956a242fc0f5.png" alt="digraph {
+
+    label = &quot;\n图 9-4    数据库键空间例子&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    //
+
+    redisDb [label = &quot;redisDb | ... | &lt;dict&gt; dict | ...&quot;];
+
+    dict [label = &quot;&lt;dict&gt; dict | &lt;alphabet&gt; StringObject \n \&quot;alphabet\&quot; | &lt;book&gt; StringObject \n \&quot;book\&quot; | &lt;message&gt; StringObject \n \&quot;message\&quot;&quot;];
+
+    subgraph cluster_alphabet {
+
+        a [label = &quot; StringObject \n \&quot;a\&quot; &quot;];
+        b [label = &quot; StringObject \n \&quot;b\&quot; &quot;];
+        c [label = &quot; StringObject \n \&quot;c\&quot; &quot;];
+
+        a -&gt; b -&gt; c;
+
+        label = &quot;ListObject&quot;;
+
+    }
+
+    //alphabet [label = &quot;&lt;head&gt; ListObject | { StringObject \n \&quot;a\&quot; | \&quot;b\&quot; | \&quot;c\&quot; }&quot;];
+
+    book [label = &quot;&lt;head&gt; HashObject | &lt;name&gt; StringObject \n \&quot;name\&quot; | &lt;author&gt; StringObject \n \&quot;author\&quot; | &lt;publisher&gt; StringObject \n \&quot;publisher\&quot;&quot;];
+
+    //name [label = &quot; StringObject \n \&quot;Redis in Action\&quot;&quot;];
+    name [label = &quot; StringObject \n \&quot;Redis in Action\&quot;&quot;];
+
+    author [label = &quot; StringObject \n \&quot;Josiah L. Carlson\&quot;&quot;];
+
+    publisher [label = &quot; StringObject \n \&quot;Manning\&quot;&quot;];
+
+    message [label = &quot; StringObject \n \&quot;hello world\&quot;&quot;];
+
+    //
+
+    redisDb:dict -&gt; dict:dict;
+
+    dict:alphabet -&gt; a;
+    dict:book -&gt; book:head;
+    dict:message -&gt; message;
+
+    book:name -&gt; name;
+    book:publisher -&gt; publisher;
+    book:author -&gt; author;
+
+}" />
+</p>
+<hr class="docutils" />
+<p>带有过期时间的字典示例。</p>
+<p class="graphviz">
+<img src="_images/graphviz-a98e948b7df5bec0a324d87ba3f12bb965e8bd00.png" alt="digraph {
+
+    label = &quot;\n图 9-12    带有过期字典的数据库例子&quot;;
+
+    rankdir = LR;
+
+    node [shape = record];
+
+    //
+
+    redisDb [label = &quot;redisDb | ... | &lt;dict&gt; dict | &lt;expires&gt; expires | ...&quot;];
+
+    dict [label = &quot;&lt;dict&gt; dict | &lt;alphabet&gt; StringObject \n \&quot;alphabet\&quot; | &lt;book&gt; StringObject \n \&quot;book\&quot; | &lt;message&gt; StringObject \n \&quot;message\&quot;&quot;];
+
+    subgraph cluster_alphabet {
+
+        a [label = &quot; StringObject \n \&quot;a\&quot; &quot;];
+        b [label = &quot; StringObject \n \&quot;b\&quot; &quot;];
+        c [label = &quot; StringObject \n \&quot;c\&quot; &quot;];
+
+        a -&gt; b -&gt; c;
+
+        label = &quot;ListObject&quot;;
+
+    }
+
+    book [label = &quot;&lt;head&gt; HashObject | &lt;name&gt; StringObject \n \&quot;name\&quot; | &lt;author&gt; StringObject \n \&quot;author\&quot; | &lt;publisher&gt; StringObject \n \&quot;publisher\&quot;&quot;];
+
+    name [label = &quot;&lt;head&gt; StringObject \n \&quot;Redis in Action\&quot;&quot;];
+
+    author [label = &quot;&lt;head&gt; StringObject \n \&quot;Josiah L. Carlson\&quot;&quot;];
+
+    publisher [label = &quot;&lt;head&gt; StringObject \n \&quot;Manning\&quot;&quot;];
+
+    message [label = &quot;&lt;head&gt; StringObject \n \&quot;hello world\&quot;&quot;];
+
+    //
+
+    expires [label = &quot;&lt;head&gt; dict | &lt;alphabet&gt; StringObject \n \&quot;alphabet\&quot; | &lt;book&gt; StringObject \n \&quot;book\&quot;&quot;];
+
+    redisDb:expires -&gt; expires:head;
+
+    alphabet_expire [label = &quot;&lt;head&gt; long long | 1385877600000&quot;];
+    book_expire [label = &quot;&lt;head&gt; long long | 1388556000000&quot;];
+
+    expires:alphabet -&gt; alphabet_expire:head;
+    expires:book -&gt; book_expire:head;
+
+    //
+
+    redisDb:dict -&gt; dict:dict;
+
+    dict:alphabet -&gt; a;
+    dict:book -&gt; book:head;
+    dict:message -&gt; message:head;
+
+    book:name -&gt; name:head;
+    book:publisher -&gt; publisher:head;
+    book:author -&gt; author:head;
+
+}" />
+</p>
+<hr class="docutils" />
+<p><code class="docutils literal"><span class="pre">GET</span></code> 命令判断是否需要删除过期键的过程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-bea3896f8f78c1121ed10c3963085383f28e69df.png" alt="digraph {
+
+    label = &quot;\n图 9-16    GET 命令的执行过程&quot;;
+
+    node [shape = box];
+
+    //
+
+    get [label = &quot;GET &lt;key&gt;&quot;];
+
+    key_exists_or_not [label = &quot;键不存在？&quot;, shape = diamond];
+
+    key_expired_or_not [label = &quot;键已过期？&quot;, shape = diamond];
+
+    return_nil [label = &quot;返回空回复&quot;];
+
+    return_value [label = &quot;返回键 key 的值&quot;];
+
+    //
+
+    get -&gt; key_exists_or_not;
+
+    key_exists_or_not -&gt; return_nil [label = &quot;是&quot;];
+
+    key_exists_or_not -&gt; key_expired_or_not [label = &quot;否&quot;];
+
+    key_expired_or_not -&gt; return_nil [label = &quot;是\n删除过期键&quot;];
+
+    key_expired_or_not -&gt; return_value [label = &quot;否&quot;];
+
+}" />
+</p>
+<hr class="docutils" />
+<p>当 Redis 运行在复制模式时，
+主从服务器处理过期键的流程。</p>
+<p class="graphviz">
+<img src="_images/graphviz-6e917ce52dd6b7229798347a6a0c7b271b6346ae.png" alt="digraph {
+
+    label = &quot;\n图 9-17    主从服务器删除过期键 （1）&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    subgraph cluster_master {
+
+        label = &quot;主服务器&quot;;
+
+        master_db [label = &quot; 数据库 | message \n （已过期） | xxx | yyy &quot;];
+
+    }
+
+    subgraph cluster_slave {
+
+        label = &quot;从服务器&quot;;
+
+        slave_db [label = &quot; 数据库 | message \n （已过期） | xxx | yyy &quot;];
+
+    }
+
+    //
+
+    master_db -&gt; slave_db [style = invis, minlen = 2];
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-9839089a12e44ba12c2237a4c250bfe0e004e15b.png" alt="digraph {
+
+    label = &quot;\n图 9-18    主从服务器删除过期键 （2）&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    subgraph cluster_master {
+
+        label = &quot;主服务器&quot;;
+
+        master_db [label = &quot; 数据库 | message \n （已过期） | xxx | yyy &quot;];
+
+    }
+
+    subgraph cluster_slave {
+
+        label = &quot;从服务器&quot;;
+
+        slave_db [label = &quot; 数据库 | &lt;message&gt; message \n （已过期） | xxx | yyy &quot;];
+
+    }
+
+    client [label = &quot;客户端&quot;, shape = circle];
+
+    //
+    splines = polyline;
+
+    master_db -&gt; slave_db [style = invis, minlen = 2];
+
+    slave_db -&gt; client [dir = back, label = &quot;GET message&quot;];
+
+    slave_db -&gt; client [label = &quot;(nil)&quot;];
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-763e7edad215846a6cf6a99999eeace75f99d5de.png" alt="digraph {
+
+    label = &quot;\n图 9-19    主从服务器删除过期键 （3）&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record];
+
+    subgraph cluster_master {
+
+        label = &quot;主服务器&quot;;
+
+        master_db [label = &quot; 数据库 | xxx | yyy &quot;, width = 1.25, height = 1.75];
+
+    }
+
+    subgraph cluster_slave {
+
+        label = &quot;从服务器&quot;;
+
+        slave_db [label = &quot; 数据库 | &lt;message&gt; message \n （已过期） | xxx | yyy &quot;];
+
+    }
+
+    client [label = &quot;客户端&quot;, shape = circle];
+
+    //
+
+    splines = polyline;
+
+    master_db -&gt; slave_db [label = &quot;DEL message&quot;];
+
+    client -&gt; master_db [label = &quot;GET message&quot;];
+    client -&gt; master_db [dir = back, label = &quot;(nil)&quot;];
+
+}" />
+</p>
+<p class="graphviz">
+<img src="_images/graphviz-bb687147c3aba0b825b951326887947d07d53624.png" alt="digraph {
+
+    label = &quot;\n图 9-20    主从服务器删除过期键 （4）&quot;;
+
+    rankdir = LR;
+
+    //
+
+    node [shape = record, width = 1.25, height = 1.75];
+
+    subgraph cluster_master {
+
+        label = &quot;主服务器&quot;;
+
+        master_db [label = &quot; 数据库 | xxx | yyy &quot;];
+
+    }
+
+    subgraph cluster_slave {
+
+        label = &quot;从服务器&quot;;
+
+        slave_db [label = &quot; 数据库 | xxx | yyy &quot;];
+
+    }
+
+    //
+
+    master_db -&gt; slave_db [style = invis, minlen = 2];
+
+}" />
+</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="8-object.html"
+                        title="previous chapter">第 8 章：对象</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="10-rdb.html"
+                        title="next chapter">第 10 章：RDB 持久化</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/9-db.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="10-rdb.html" title="第 10 章：RDB 持久化"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="8-object.html" title="第 8 章：对象"
+             >previous</a> |</li>
+        <li><a href="index.html">《Redis 设计与实现》图片集</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2014, 黄健宏（huangz）.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1.
+    </div>
+  </body>
+</html>
